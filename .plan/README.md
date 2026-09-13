@@ -37,8 +37,8 @@ This repository targets the revised PaC v0.2.0 semantics (see `SPEC.md`). It MAY
 
 ## Active plans
 
-- P001 — Strengthen PaC Protocol Semantics and Conformance.
+None.
 
 ## Closed plans
 
-None.
+- P001 — Strengthen PaC Protocol Semantics and Conformance.
