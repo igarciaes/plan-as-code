@@ -990,6 +990,34 @@ Relationships MUST be validated for:
 
 Valid dependency graphs MUST pass validation. Detection of these conditions is machine-checkable (Section 28).
 
+## 24. Entity relationships
+
+PaC entities MUST be able to reference each other through typed relationships addressed by stable identifiers.
+
+### 24.1 Supported relationships
+
+The normalized model MUST support traceability equivalent to:
+
+```text
+Plan
+ └── Task
+      ├── Acceptance Criterion
+      ├── Implementation Evidence
+      ├── Verification Outcome
+      └── Finding
+
+Finding
+ └── Feedback
+      └── Planning Decision
+```
+
+### 24.2 Rules
+
+- Relationship targets MUST use stable identifiers (for example `P001-T002`, `AC-P001-T002-01`, `P001-T001-F001`, `P001-D001`).
+- Invalid references MUST be detectable by validation (Section 28).
+- Plan-to-verification traceability MUST be possible: a Plan leads to Tasks, each with Verification Outcomes that reference Acceptance Criteria and Verification Evidence.
+- Finding-to-decision traceability MUST be possible: a Finding leads to Feedback, and a Feedback thread leads to a Planning Decision.
+
 ## 29. Human-readable format
 
 Markdown is the canonical default format.
