@@ -109,6 +109,13 @@
               "pattern": "^P[0-9]+-T[0-9]+$"
             }
           },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(depends-on|blocks|requires|conflicts-with|supersedes) P[0-9]+-T[0-9]+$"
+            }
+          },
           "acceptance": {
             "type": "array",
             "items": {

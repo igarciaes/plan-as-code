@@ -1077,6 +1077,19 @@ Relationships MUST be validated for:
 - dependency cycles — a cycle among `depends-on` or `requires` relationships;
 - invalid relationship combinations — combinations that contradict the semantics (for example a task both `depends-on` and `conflicts-with` the same target).
 
+### 23.3 Representation
+
+A task MAY declare typed relationships in a `**Relationships:**` field, one per bullet, using `<type> <target>` form:
+
+```text
+**Relationships:**
+
+- conflicts-with P001-T002
+- requires P001-T003
+```
+
+The `**Depends on:**` field is shorthand for `depends-on` relationships and MUST be treated as `depends-on` when validating.
+
 Valid dependency graphs MUST pass validation. Detection of these conditions is machine-checkable (Section 28).
 
 ## 24. Entity relationships
@@ -1207,6 +1220,7 @@ INV-009 — Findings have stable IDs.
 INV-010 — Feedback is append-only.
 INV-011 — Plan changes are traceable to decisions.
 INV-012 — Artifact ownership boundaries are respected.
+INV-013 — Contradictory relationship combinations are rejected.
 ```
 
 ### 28.1 Checkability
@@ -1244,6 +1258,7 @@ Plan record (`schemas/plan.schema.json`):
 | Task `**Owner:**` | task `owner` |
 | Task description paragraph | task `description` |
 | Task `**Depends on:**` items | task `dependencies` (array of strings) |
+| Task `**Relationships:**` items | task `relationships` (array of strings in `<type> <target>` form) |
 | Task `#### Acceptance` checkbox list | task `acceptance` (array of objects with `id` derived from the leading `AC-...-NN` marker and `text` from the item text without the `- [ ]` marker) |
 | `### P001-T001-F001 — Finding title` heading under `## Findings` | finding `id` and finding `title` |
 | Finding `**Status:**` | finding `status` (finding lifecycle, Section 25) |
@@ -1308,7 +1323,7 @@ Agents MUST NOT:
 - claim verification without evidence;
 - modify another role's primary artifact.
 
-### 21.1 Discovery
+### 30.1 Discovery
 
 Before operating, an agent SHOULD:
 

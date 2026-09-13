@@ -290,6 +290,33 @@ Answer.
         root = self.make_repo([owned])
         self.assertTrue(self.violations_for(root, "INV-012"))
 
+    def test_inv013_contradictory_relationships(self):
+        invalid = VALID_PLAN.replace(
+            "**Depends on:**\n\n- P001-T001\n\n#### Acceptance",
+            "**Depends on:**\n\n- P001-T001\n\n**Relationships:**\n\n- conflicts-with P001-T001\n\n#### Acceptance",
+            1,
+        )
+        root = self.make_repo([invalid])
+        self.assertTrue(self.violations_for(root, "INV-013"))
+
+    def test_inv013_requires_and_conflicts_same_target(self):
+        invalid = VALID_PLAN.replace(
+            "**Depends on:**\n\n- P001-T001\n\n#### Acceptance",
+            "**Relationships:**\n\n- requires P001-T001\n- conflicts-with P001-T001\n\n#### Acceptance",
+            1,
+        )
+        root = self.make_repo([invalid])
+        self.assertTrue(self.violations_for(root, "INV-013"))
+
+    def test_inv013_valid_relationships_pass(self):
+        valid = VALID_PLAN.replace(
+            "**Depends on:**\n\n- P001-T001\n\n#### Acceptance",
+            "**Relationships:**\n\n- requires P001-T001\n- blocks P001-T001\n\n#### Acceptance",
+            1,
+        )
+        root = self.make_repo([valid])
+        self.assertEqual(run(root), [])
+
 
 if __name__ == "__main__":
     unittest.main()

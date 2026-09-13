@@ -23,6 +23,7 @@ EXPECTED_INVALID = {
     "missing-verification": "INV-007",
     "invalid-feedback": "INV-010",
     "invalid-ownership": "INV-012",
+    "invalid-combination": "INV-013",
 }
 
 

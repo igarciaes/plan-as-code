@@ -38,6 +38,7 @@ CHECKBOX = re.compile(r"^-\s+\[([ x])\]\s+(.+)$")
 BULLET = re.compile(r"^-\s+(.+)$")
 AC_ITEM = re.compile(r"^(AC-P\d+-T\d+-\d+)\s+—\s+(.+)$")
 ID_RE = re.compile(r"(P\d+(?:-T\d+)?(?:-F\d+)?(?:-D\d+)?)")
+RELATIONSHIP_ITEM = re.compile(r"^(depends-on|blocks|requires|conflicts-with|supersedes)\s+(P\d+-T\d+)$")
 FEEDBACK_HEADING = re.compile(r"^#\s+Feedback\s+—\s+(.+)$", re.MULTILINE)
 FEEDBACK_ITEM = re.compile(r"^##\s+(P\d+(?:-T\d+)?(?:-F\d+)?-FB\d+)\s+—\s+(.+)$")
 
@@ -65,6 +66,7 @@ ALL_INVARIANTS = [
     "INV-010",
     "INV-011",
     "INV-012",
+    "INV-013",
 ]
 
 DEFAULT_CHECKS = ALL_INVARIANTS + ["STATE"]
@@ -114,7 +116,7 @@ def parse_plan(text, path):
             continue
         m = TASK_HEADING.match(line)
         if m:
-            entity = {"id": m.group(1), "title": m.group(2), "fields": {}, "dependencies": [], "acceptance": []}
+            entity = {"id": m.group(1), "title": m.group(2), "fields": {}, "dependencies": [], "relationships": [], "acceptance": []}
             plan["tasks"].append(entity)
             current = "task"
             sub = None
@@ -164,7 +166,10 @@ def parse_plan(text, path):
         if m:
             content = m.group(1)
             if current == "task" and entity is not None and sub != "acceptance":
-                if re.fullmatch(r"P\d+-T\d+", content):
+                rm = RELATIONSHIP_ITEM.match(content)
+                if rm:
+                    entity["relationships"].append({"type": rm.group(1), "target": rm.group(2)})
+                elif re.fullmatch(r"P\d+-T\d+", content):
                     entity["dependencies"].append(content)
             elif current == "verification" and entity is not None and sub == "evidence":
                 entity["evidence"].append(content)
@@ -296,6 +301,13 @@ def validate_models(plans, threads, config):
                 for dep in task["dependencies"]:
                     if dep not in task_index:
                         add("INV-005", plan["file"], f"Task {task['id']} references missing target {dep!r}")
+                for rel in task["relationships"]:
+                    if rel["target"] not in task_index:
+                        add(
+                            "INV-005",
+                            plan["file"],
+                            f"Task {task['id']} relationship {rel['type']} references missing target {rel['target']!r}",
+                        )
             for finding in plan["findings"]:
                 for ref in finding["references"]:
                     if re.fullmatch(r"P\d+-T\d+", ref) and ref not in task_index:
@@ -338,6 +350,25 @@ def validate_models(plans, threads, config):
                     dfs(tid, [])
             for cycle in cycles:
                 add("INV-006", plan["file"], f"dependency cycle detected: {' -> '.join(cycle)}")
+
+    if "INV-013" in checks:
+        for plan in plans:
+            for task in plan["tasks"]:
+                positive = set()
+                conflicts = set()
+                for dep in task["dependencies"]:
+                    positive.add(dep)
+                for rel in task["relationships"]:
+                    if rel["type"] in ("depends-on", "requires"):
+                        positive.add(rel["target"])
+                    elif rel["type"] == "conflicts-with":
+                        conflicts.add(rel["target"])
+                for target in sorted(positive & conflicts):
+                    add(
+                        "INV-013",
+                        plan["file"],
+                        f"Task {task['id']} both depends-on/requires and conflicts-with target {target!r}",
+                    )
 
     if "INV-007" in checks or "INV-008" in checks:
         for plan in plans:
