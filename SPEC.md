@@ -1190,6 +1190,32 @@ Verified plus normalized representation, automated validation, relationship vali
 - Core PaC usage MUST remain possible without automation.
 - The declaration MAY be recorded in `.plan/README.md` or in a plan record.
 
+## 28. Protocol invariants
+
+The following invariants MUST hold for conforming PaC artifacts. Each invariant has a stable identifier.
+
+```text
+INV-001 — Plan IDs are unique.
+INV-002 — Task IDs are unique.
+INV-003 — Every Task belongs to a Plan.
+INV-004 — Every Acceptance Criterion belongs to one Task.
+INV-005 — Relationship targets exist.
+INV-006 — Invalid dependency cycles are rejected.
+INV-007 — Verified requires independent verification.
+INV-008 — Implementation evidence cannot alone produce Verified.
+INV-009 — Findings have stable IDs.
+INV-010 — Feedback is append-only.
+INV-011 — Plan changes are traceable to decisions.
+INV-012 — Artifact ownership boundaries are respected.
+```
+
+### 28.1 Checkability
+
+- Every invariant MUST be machine-checkable where applicable.
+- Invalid artifacts MUST produce actionable validation failures that identify the invariant and the offending artifact.
+- Validation MUST cover identity, relationships, state, evidence, and ownership.
+- Invariant validation MUST be covered by automated tests.
+
 ## 29. Human-readable format
 
 Markdown is the canonical default format.
