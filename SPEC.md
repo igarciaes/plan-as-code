@@ -403,6 +403,8 @@ The semantics are:
 
 Only independent verification can produce the `Verified` state. An Implementer MUST NOT mark a task as Verified.
 
+Deterministic derivation of task state from repository artifacts is defined in Section 22.
+
 ## 11. Feedback
 
 Feedback represents append-only communication associated with a task, a finding, or a plan.
@@ -901,6 +903,56 @@ The following rules apply:
 ### 21.1 Compatibility path
 
 Plans recorded before acceptance-criterion identifiers were defined SHOULD assign identifiers to existing acceptance criteria by task order during migration. Once assigned, identifiers MUST remain stable.
+
+## 22. Deterministic task-state derivation
+
+Task state MUST be derivable from repository artifacts rather than stored in a central mutable record (Section 3.8).
+
+### 22.1 Inputs
+
+The derivation MAY use the following repository artifacts:
+
+- the canonical plan record, including the task status recorded by the owning role;
+- implementation evidence references (Section 16);
+- verification outcomes and verification evidence (Sections 17 and 26);
+- findings associated with the task (Section 25);
+- recorded planning decisions (Section 12).
+
+The derived state MUST be one of:
+
+```text
+Draft
+Planned
+In Progress
+Implemented
+Verified
+Blocked
+Deferred
+Cancelled
+```
+
+### 22.2 Precedence
+
+Where multiple conditions apply, the derivation MUST apply the following precedence, highest first:
+
+```text
+Cancelled
+Deferred
+Blocked
+Verified
+Implemented
+In Progress
+Planned
+Draft
+```
+
+### 22.3 Requirements
+
+- `Implemented` requires implementation evidence.
+- `Verified` requires independent verification evidence that satisfies the repository's configured verification requirement (Section 26).
+- `Implemented` MUST NOT imply `Verified`.
+- A blocking finding MUST prevent the affected task from being derived as `Verified` or `Implemented` until it is resolved, accepted, or superseded (Section 25).
+- The derivation MUST produce the same derived state for equivalent repositories.
 
 ## 29. Human-readable format
 
