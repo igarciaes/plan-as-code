@@ -2,7 +2,7 @@
 
 ## Version
 
-**PaC v0.1.0**
+**PaC v0.2.0**
 
 ## 1. Purpose
 
@@ -281,7 +281,7 @@ The canonical plan template is:
 **Scope:** `path/`
 **Planner:** planner-agent
 **Created:** YYYY-MM-DD
-**PaC version:** v0.1.0
+**PaC version:** v0.2.0
 **Current iteration:** 1
 
 ## Objective
@@ -1245,12 +1245,23 @@ Plan record (`schemas/plan.schema.json`):
 | Task description paragraph | task `description` |
 | Task `**Depends on:**` items | task `dependencies` (array of strings) |
 | Task `#### Acceptance` checkbox list | task `acceptance` (array of objects with `id` derived from the leading `AC-...-NN` marker and `text` from the item text without the `- [ ]` marker) |
-| `### P001-T001-F001 — Finding title` heading | finding `id` and finding `title` |
-| Finding `**Status:**` | finding `status` |
+| `### P001-T001-F001 — Finding title` heading under `## Findings` | finding `id` and finding `title` |
+| Finding `**Status:**` | finding `status` (finding lifecycle, Section 25) |
 | Finding `**Severity:**` | finding `severity` |
+| Finding `#### References` items | finding `references` (array of stable IDs) |
+| Finding `#### Resolution` content | finding `resolution` |
 | `### P001-D001 — Decision title` heading under `## Decisions` | decision `id` (`P001-D001`) and decision `title` |
+| Decision `**Context:**` line | decision `context` |
 | Decision `**Decision:**` line | decision `decision` |
 | Decision `**Rationale:**` line | decision `rationale` |
+| Decision `**Affected:**` line | decision `affected` (array of stable IDs) |
+| Decision `**Resulting changes:**` line | decision `resulting_changes` |
+| `### P001-T001` heading under `## Verification` | verification `task` (`P001-T001`) |
+| Verification `**Status:**` | verification `status` |
+| Verification `**Verifier:**` line | verification `verifier` |
+| Verification `**Independence:** Level N` line | verification `independence_level` (integer 0–4) |
+| Verification `#### Evidence` items | verification `evidence` (array of `{type, value}` references) |
+| Verification `#### Acceptance` checkbox list | verification `acceptance` (array of `{id, result}`) |
 
 Fields that appear in the Markdown but have no schema property (for example links or narrative prose) are not projected.
 
@@ -1314,7 +1325,7 @@ Before operating, an agent SHOULD:
 
 Conformance levels are defined in Section 27.
 
-A PaC implementation conforms to v0.1.0 when it:
+A PaC implementation conforms to v0.2.0 when it:
 
 1. supports multiple plan records per repository;
 2. provides stable plan, task, finding, and feedback IDs;
@@ -1325,6 +1336,34 @@ A PaC implementation conforms to v0.1.0 when it:
 7. provides a human-readable plan representation;
 8. supports append-only, git-managed feedback records;
 9. derives state from plan artifacts without a central mutable registry.
+
+## 32. Migration from v0.1.0
+
+This section documents how existing PaC v0.1.0 artifacts can be migrated to v0.2.0. Migration SHOULD preserve stable identifiers.
+
+### 32.1 Acceptance criteria
+
+v0.1.0 acceptance criteria are plain checkbox items without identifiers. During migration, assign identifiers in task order using the form `AC-<plan>-<task>-<nn>` (Section 21). Once assigned, identifiers MUST remain stable.
+
+### 32.2 Findings
+
+v0.1.0 findings with a `**Status:**` of `Open`, `Resolved`, or another value SHOULD be mapped to the lifecycle vocabulary (Section 25). Unrecognized statuses SHOULD map to `Open` until dispositioned.
+
+### 32.3 Decisions
+
+v0.1.0 decision discussions recorded only in feedback threads SHOULD be promoted to `## Decisions` records with `P###-D###` identifiers where they resulted in a plan change (Section 12).
+
+### 32.4 Verification
+
+v0.1.0 verification records SHOULD be extended with `**Independence:**` levels (Section 26) and structured evidence references (Section 17). Verification records without a stated level are treated as Level 1 (separate verification operation).
+
+### 32.5 Conformance
+
+A repository MAY declare its conformance level (Section 27). Migration to a higher level than the repository previously supported is a separate decision.
+
+### 32.6 No automatic rewrite
+
+Migration MUST NOT require an automated rewrite. Existing valid v0.1.0 records remain readable; the identifiers and structure above are additive.
 
 ## 33. Fundamental invariant
 
