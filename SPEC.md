@@ -2,7 +2,7 @@
 
 ## Version
 
-**PaC v0.2.1**
+**PaC v0.3.0**
 
 ## 1. Purpose
 
