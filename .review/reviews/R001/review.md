@@ -1,6 +1,7 @@
 # R001 — Review of P001 Implementation
 
-Status: open
+Status: closed
+Closed: 2026-09-13
 
 Type: Implementation review
 
