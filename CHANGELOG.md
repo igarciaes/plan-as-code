@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.0] - 2026-09-13
+
+### Added
+
+- Typed relationship representation `**Relationships:**` for tasks (`SPEC.md` §23.3), machine-checkable invariant `INV-013` (`SPEC.md` §28) rejecting contradictory relationship combinations, matching `tools/validate.py` support, `schemas/plan.schema.json` task `relationships` projection (`SPEC.md` §29.1), and an `invalid-combination` conformance fixture.
+
+### Fixed
+
+- `SPEC.md` §30 subsection heading misnumbered as `### 21.1 Discovery`; renamed to `### 30.1 Discovery` (review R001 finding F001).
+
 ## [v0.2.1] - 2026-09-13
 
 ### Added
