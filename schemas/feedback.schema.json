@@ -3,7 +3,7 @@
   "$id": "https://plan-as-code.dev/schemas/feedback.schema.json",
   "title": "Plan as Code Feedback Thread",
   "type": "object",
-  "description": "Optional machine-readable projection of a PaC feedback thread, derived per SPEC Section 20.1. Markdown remains the canonical human-readable format. Additional properties are permitted at the record level so repositories MAY extend records.",
+  "description": "Optional machine-readable projection of a PaC feedback thread, derived per SPEC Section 29.1. Markdown remains the canonical human-readable format. Feedback is append-only. Additional properties are permitted at the record level so repositories MAY extend records.",
   "required": [
     "subject_id",
     "items"

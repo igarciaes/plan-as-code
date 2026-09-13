@@ -3,7 +3,7 @@
   "$id": "https://plan-as-code.dev/schemas/plan.schema.json",
   "title": "Plan as Code Plan Record",
   "type": "object",
-  "description": "Optional machine-readable projection of a PaC plan, derived per SPEC Section 20.1. Markdown remains the canonical human-readable format. Additional properties are permitted at the record level so repositories MAY extend records.",
+  "description": "Optional machine-readable projection of a PaC plan, derived per SPEC Section 29.1. Markdown remains the canonical human-readable format. Additional properties are permitted at the record level so repositories MAY extend records.",
   "required": [
     "id",
     "title",
@@ -50,6 +50,21 @@
         "type": "string"
       }
     },
+    "conformance": {
+      "type": "object",
+      "description": "Optional declaration of the repository or plan conformance level (SPEC Section 27).",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "Core",
+            "Agent",
+            "Verified",
+            "Automated"
+          ]
+        }
+      }
+    },
     "tasks": {
       "type": "array",
       "items": {
@@ -90,38 +105,182 @@
           "dependencies": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^P[0-9]+-T[0-9]+$"
             }
           },
           "acceptance": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "object",
+              "required": [
+                "id",
+                "text"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^AC-P[0-9]+-T[0-9]+-[0-9]+$"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Findings recorded in the `## Findings` section (SPEC Section 25).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^P[0-9]+-T[0-9]+-F[0-9]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Open",
+              "Acknowledged",
+              "Resolved",
+              "Accepted",
+              "Invalid",
+              "Superseded"
+            ]
+          },
+          "severity": {
+            "type": "string"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^P[0-9]+-T[0-9]+$"
             }
           },
-          "findings": {
+          "resolution": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Planning decisions recorded in the `## Decisions` section (SPEC Section 12).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "decision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^P[0-9]+-D[0-9]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "affected": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^P[0-9]+(-T[0-9]+)?$"
+            }
+          },
+          "resulting_changes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "verifications": {
+      "type": "array",
+      "description": "Verification outcomes recorded in the `## Verification` section (SPEC Sections 17 and 26).",
+      "items": {
+        "type": "object",
+        "required": [
+          "task",
+          "status"
+        ],
+        "properties": {
+          "task": {
+            "type": "string",
+            "pattern": "^P[0-9]+-T[0-9]+$"
+          },
+          "status": {
+            "type": "string"
+          },
+          "verifier": {
+            "type": "string"
+          },
+          "independence_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "evidence": {
             "type": "array",
             "items": {
               "type": "object",
               "required": [
-                "id",
-                "title",
-                "status"
+                "type",
+                "value"
               ],
-              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "commit",
+                    "pull-request",
+                    "file",
+                    "test",
+                    "command",
+                    "artifact",
+                    "test-result",
+                    "review",
+                    "report",
+                    "acceptance-evaluation"
+                  ]
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "object",
               "properties": {
                 "id": {
                   "type": "string",
-                  "pattern": "^P[0-9]+-T[0-9]+-F[0-9]+$"
+                  "pattern": "^AC-P[0-9]+-T[0-9]+-[0-9]+$"
                 },
-                "title": {
-                  "type": "string"
-                },
-                "status": {
-                  "type": "string"
-                },
-                "severity": {
-                  "type": "string"
+                "result": {
+                  "type": "boolean"
                 }
               }
             }
