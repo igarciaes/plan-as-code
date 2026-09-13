@@ -710,6 +710,28 @@ Do NOT create a mandatory implementation database.
 
 The exact storage location for implementation evidence MAY be configured. The default implementation SHOULD avoid requiring additional mutable files.
 
+### 16.1 Evidence reference types
+
+Implementation evidence SHOULD use one of the following reference types:
+
+```text
+commit
+pull-request
+file
+test
+command
+artifact
+```
+
+A structured implementation evidence reference SHOULD record:
+
+- **type** — one of the reference types above;
+- **value** — a Git-native reference (for example a commit SHA or file path);
+- **task** — the task the evidence implements;
+- **acceptance** — the acceptance criteria it satisfies, where applicable.
+
+Implementation evidence MUST be linkable to the task it implements and, where applicable, to the acceptance criteria it satisfies.
+
 Example:
 
 ````markdown
@@ -762,6 +784,21 @@ Example:
 ```
 
 If verification fails, create a finding.
+
+### 17.1 Verification evidence
+
+Verification evidence SHOULD use one of the following reference types:
+
+```text
+test-result
+command
+review
+report
+artifact
+acceptance-evaluation
+```
+
+Each verification evidence reference MUST record an outcome. Verification evidence MUST be linkable to the task and, where applicable, to the acceptance criteria it evaluates. Verification records MUST identify the verification-independence level used (Section 26).
 
 Example:
 
