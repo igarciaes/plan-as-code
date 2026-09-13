@@ -645,7 +645,7 @@ The Verifier independently evaluates the acceptance criteria and records verific
 
 ### 14.7 Findings
 
-If verification fails or progress is prevented, a finding is created (Section 8, Findings).
+If verification fails or progress is prevented, a finding is created (Section 25).
 
 ### 14.8 Additional iterations
 
@@ -1069,6 +1069,39 @@ Finding
 - Invalid references MUST be detectable by validation (Section 28).
 - Plan-to-verification traceability MUST be possible: a Plan leads to Tasks, each with Verification Outcomes that reference Acceptance Criteria and Verification Evidence.
 - Finding-to-decision traceability MUST be possible: a Finding leads to Feedback, and a Feedback thread leads to a Planning Decision.
+
+## 25. Finding lifecycle
+
+A finding has a defined lifecycle. The supported states are:
+
+```text
+Open
+Acknowledged
+Resolved
+Accepted
+Invalid
+Superseded
+```
+
+The semantics are:
+
+| State | Meaning |
+|-------|---------|
+| Open | Discovered, not yet dispositioned. |
+| Acknowledged | Recognized by the responsible role. |
+| Resolved | The deviation was corrected. |
+| Accepted | The deviation is tolerated by explicit decision. |
+| Invalid | The finding was rejected as not valid. |
+| Superseded | The finding was replaced by another finding. |
+
+### 25.1 Rules
+
+- Findings MUST remain distinct from tasks. A task represents intended work; a finding represents a discovered deviation or failure.
+- Findings MUST have stable identifiers (Section 3.6).
+- A finding MUST be able to reference the affected tasks and acceptance criteria.
+- When a finding requires implementation work, the resulting task MUST be explicitly created through the planning process rather than implicitly created by the finding.
+- A finding's disposition MUST be traceable to a planning decision (Section 12).
+- A blocking finding MUST affect derived task state as defined in Section 22.
 
 ## 29. Human-readable format
 
