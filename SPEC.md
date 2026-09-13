@@ -1163,6 +1163,33 @@ The protocol supports the following levels:
 - Verification records MUST identify the independence level used.
 - State derivation MUST respect the configured verification requirement (Section 22).
 
+## 27. Conformance levels
+
+The protocol defines four conformance levels. Higher levels build on lower levels.
+
+### PaC Core
+
+Canonical plans, stable IDs, tasks, and acceptance criteria.
+
+### PaC Agent
+
+Core plus ownership, feedback, decisions, and agent procedures.
+
+### PaC Verified
+
+Agent plus evidence, findings, and independent verification.
+
+### PaC Automated
+
+Verified plus normalized representation, automated validation, relationship validation, and deterministic state derivation.
+
+### 27.1 Rules
+
+- A repository MUST be able to declare its supported conformance level.
+- A tool MUST be able to declare its supported conformance level.
+- Core PaC usage MUST remain possible without automation.
+- The declaration MAY be recorded in `.plan/README.md` or in a plan record.
+
 ## 29. Human-readable format
 
 Markdown is the canonical default format.
@@ -1258,6 +1285,8 @@ Before operating, an agent SHOULD:
 8. record evidence and stop at the role boundary.
 
 ## 31. Conformance
+
+Conformance levels are defined in Section 27.
 
 A PaC implementation conforms to v0.1.0 when it:
 
