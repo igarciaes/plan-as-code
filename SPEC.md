@@ -149,6 +149,34 @@ Git-native references that record how a task was implemented.
 
 An explicit, recorded Planner determination that changes or confirms the canonical plan.
 
+### Acceptance criterion identifier
+
+A stable identifier of the form `AC-P###-T###-NN` that identifies a single acceptance criterion within a task. Criterion identity is independent of its text.
+
+### Verification outcome
+
+A recorded Verifier determination of whether a task's acceptance criteria were satisfied, including its verification-independence level and evidence references.
+
+### Verification evidence
+
+Git-native references that record how a task was verified.
+
+### Entity relationship
+
+A typed connection between two PaC entities (for example a Task dependency, or a Finding's reference to a Task), addressed by stable identifiers.
+
+### Dependency
+
+A typed ordering or availability constraint between tasks (for example `depends-on`, `blocks`, `requires`, `conflicts-with`, `supersedes`).
+
+### Conformance level
+
+A named tier of PaC conformance (Core, Agent, Verified, Automated) defining the protocol features a repository or tool supports.
+
+### Protocol invariant
+
+A normative property of PaC artifacts that MUST hold, with a stable identifier such as `INV-001`.
+
 ## 5. Repository model
 
 A repository MAY contain many plans.
@@ -791,13 +819,65 @@ ownership:
     - ".plan/verification/**"
 ```
 
-## 20. Human-readable format
+## 20. Normalized data model
+
+This section defines a normalized logical representation of PaC entities. Markdown remains the canonical representation (Section 3.1); the normalized model is a derived, machine-checkable projection used for validation and deterministic state derivation.
+
+### 20.1 Purpose
+
+The normalized model:
+
+- provides a single, deterministic representation of the PaC entities that appear across plan records and feedback threads;
+- establishes an unambiguous relationship between canonical Markdown and the normalized form;
+- supports machine validation and deterministic derivation of task state without replacing Markdown as the system of record;
+- documents any information that cannot be represented unambiguously.
+
+### 20.2 Entities
+
+A normalized PaC model comprises the following entities:
+
+| Entity | Description | Key fields |
+|--------|-------------|------------|
+| Plan | A durable implementation planning artifact | `id`, `title`, `status`, `scope`, `planner`, `created`, `pac_version`, `current_iteration`, `objective`, `constraints`, `tasks` |
+| Task | A unit of planned implementation work | `id`, `title`, `status`, `owner`, `description`, `dependencies`, `acceptance`, `findings`, `implementation_evidence`, `verification_outcomes` |
+| Acceptance Criterion | An observable condition a task must satisfy | `id`, `text`, `task` |
+| Finding | A discovered deviation or failure | `id`, `title`, `status`, `severity`, `description`, `references`, `disposition` |
+| Feedback | An append-only thread associated with a subject | `subject_id`, `items` |
+| Feedback Item | A single append-only record within a thread | `id`, `author`, `date`, `kind`, `content` |
+| Planning Decision | An explicit recorded Planner determination | `id`, `context`, `decision`, `rationale`, `affected`, `resulting_changes` |
+| Implementation Evidence | A Git-native reference recording how a task was implemented | `type`, `value`, `tasks`, `acceptance` |
+| Verification Outcome | A Verifier determination for a task | `task`, `result`, `independence_level`, `verifier`, `evidence` |
+| Verification Evidence | A Git-native reference recording how a task was verified | `type`, `value`, `outcome`, `tasks`, `acceptance` |
+
+The details of the relationship and dependency types are defined in Sections 23 and 24.
+
+### 20.3 Deterministic projection
+
+Canonical Markdown MUST map to the normalized model through the projection defined in Section 29.1. The projection:
+
+- MUST produce the same normalized representation for equivalent Markdown documents;
+- MUST NOT be required to reproduce narrative prose, hyperlinks, or other non-projectable content;
+- MUST document any information that cannot be represented unambiguously.
+
+```text
+Canonical Markdown
+        ↓
+Normalized PaC Model
+        ↓
+Validation / Derived State
+```
+
+### 20.4 Optionality
+
+The normalized model is optional tooling. It MUST NOT replace Markdown as the source of truth. A repository MUST remain fully usable with only Markdown and Git.
+
+## 29. Human-readable format
 
 Markdown is the canonical default format.
 
 Machine-readable representations MAY be generated for validation or automation but SHOULD NOT replace the human-readable plan artifact.
 
-### 20.1 Markdown-to-schema projection
+### 29.1 Markdown-to-schema projection
 
 The optional schemas in `schemas/` are machine-readable projections of the Markdown records. This section defines how each projection is derived.
 
@@ -836,7 +916,7 @@ Feedback thread (`schemas/feedback.schema.json`):
 | `**Date:**` line | item `date` |
 | Item content paragraph | item `content` |
 
-## 21. Agent interoperability
+## 30. Agent interoperability
 
 Agents MUST distinguish:
 
@@ -882,7 +962,7 @@ Before operating, an agent SHOULD:
 7. execute only allowed work within the ownership boundary;
 8. record evidence and stop at the role boundary.
 
-## 22. Conformance
+## 31. Conformance
 
 A PaC implementation conforms to v0.1.0 when it:
 
@@ -896,7 +976,7 @@ A PaC implementation conforms to v0.1.0 when it:
 8. supports append-only, git-managed feedback records;
 9. derives state from plan artifacts without a central mutable registry.
 
-## 23. Fundamental invariant
+## 33. Fundamental invariant
 
 > The Planner defines what. The Implementer defines how. The Verifier determines whether.
 
