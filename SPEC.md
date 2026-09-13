@@ -1103,6 +1103,29 @@ The semantics are:
 - A finding's disposition MUST be traceable to a planning decision (Section 12).
 - A blocking finding MUST affect derived task state as defined in Section 22.
 
+## 26. Verification independence
+
+Verification MUST distinguish self-verification from independent verification.
+
+### 26.1 Independence levels
+
+The protocol supports the following levels:
+
+| Level | Name | Meaning |
+|-------|------|---------|
+| 0 | Self verification | The Implementer verifies their own work. |
+| 1 | Separate verification operation | A distinct verification operation is performed. |
+| 2 | Separate agent/context | Verification is performed in a separate agent session or context. |
+| 3 | Independent actor/model context | Verification is performed by an actor or model independent of the Implementer. |
+| 4 | Human or externally independent verification | A human or external party verifies the work. |
+
+### 26.2 Requirements
+
+- A repository MUST be able to specify the minimum level required for `Verified`.
+- The minimum level MAY be declared in `.plan/README.md` or in the plan record.
+- Verification records MUST identify the independence level used.
+- State derivation MUST respect the configured verification requirement (Section 22).
+
 ## 29. Human-readable format
 
 Markdown is the canonical default format.
