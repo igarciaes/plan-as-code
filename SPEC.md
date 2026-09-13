@@ -238,7 +238,7 @@ A plan MUST have:
 - constraints;
 - tasks.
 
-A plan MAY have findings and verification sections.
+A plan MAY have findings, decisions, and verification sections.
 
 The recommended plan template is defined in Section 8.
 
@@ -327,6 +327,12 @@ Describe the required work.
 ## Findings
 
 No findings.
+
+---
+
+## Decisions
+
+No decisions.
 
 ---
 
@@ -493,6 +499,52 @@ A plan change MUST result from an explicit Planner decision.
 The Implementer MUST consume the canonical plan rather than infer requirements from discussion.
 
 Decisions SHOULD record the outcome and a concise rationale. The plan record SHOULD record the result of a discussion, not reproduce the discussion.
+
+### 12.1 Decision records
+
+A planning decision MUST have a stable identifier of the form:
+
+```text
+P###-D###   (for example P001-D001)
+```
+
+Decision identifiers MUST remain stable across planning iterations.
+
+A decision record MUST capture:
+
+- **context** — the circumstances or feedback leading to the decision;
+- **decision** — the Planner's determination;
+- **rationale** — why the decision was made;
+- **affected entities** — the stable IDs of the plans, tasks, or acceptance criteria affected;
+- **resulting changes** — the changes made to the canonical plan.
+
+A decision MAY reference the findings and feedback items that informed it. Plan changes MUST be traceable to decisions.
+
+The workflow is:
+
+```text
+Feedback
+    ↓
+Planner decision
+    ↓
+Plan change
+```
+
+A feedback item MUST NOT directly modify the plan.
+
+Example decision record:
+
+````markdown
+## Decisions
+
+### P001-D001 — Restrict initial provider support
+
+**Context:** Feedback in the P001-T001 thread asked whether multiple providers must be supported initially.
+**Decision:** The first implementation MUST support one provider.
+**Rationale:** Limits scope while preserving the abstraction for future providers.
+**Affected:** P001-T001
+**Resulting changes:** Constraint "only one provider initially" added to P001-T001.
+````
 
 ## 13. Ownership
 
@@ -1050,6 +1102,9 @@ Plan record (`schemas/plan.schema.json`):
 | `### P001-T001-F001 — Finding title` heading | finding `id` and finding `title` |
 | Finding `**Status:**` | finding `status` |
 | Finding `**Severity:**` | finding `severity` |
+| `### P001-D001 — Decision title` heading under `## Decisions` | decision `id` (`P001-D001`) and decision `title` |
+| Decision `**Decision:**` line | decision `decision` |
+| Decision `**Rationale:**` line | decision `rationale` |
 
 Fields that appear in the Markdown but have no schema property (for example links or narrative prose) are not projected.
 
