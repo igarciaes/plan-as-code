@@ -67,6 +67,8 @@ ALL_INVARIANTS = [
     "INV-012",
 ]
 
+DEFAULT_CHECKS = ALL_INVARIANTS + ["STATE"]
+
 
 def parse_plan(text, path):
     """Parse a plan record into the normalized model."""
@@ -211,7 +213,7 @@ def _parse_level(value):
 def validate_models(plans, threads, config):
     """Run invariant checks over parsed models. Returns a list of violations."""
     violations = []
-    checks = set(config.get("checks", ALL_INVARIANTS))
+    checks = set(config.get("checks", DEFAULT_CHECKS))
     min_level = config.get("min_verification", 1)
 
     task_index = {}
@@ -262,6 +264,7 @@ def validate_models(plans, threads, config):
                     )
 
     if "INV-004" in checks:
+        ac_owners = {}
         for plan in plans:
             for task in plan["tasks"]:
                 seen_acs = set()
@@ -278,6 +281,14 @@ def validate_models(plans, threads, config):
                     if ac["id"] in seen_acs:
                         add("INV-004", plan["file"], f"duplicate acceptance criterion {ac['id']!r} in Task {task['id']}")
                     seen_acs.add(ac["id"])
+                    ac_owners.setdefault(ac["id"], []).append(task["id"])
+        for ac_id, owners in ac_owners.items():
+            if len(set(owners)) > 1:
+                add(
+                    "INV-004",
+                    plans[0]["file"],
+                    f"acceptance criterion {ac_id!r} belongs to more than one task: {', '.join(sorted(set(owners)))}",
+                )
 
     if "INV-005" in checks:
         for plan in plans:
@@ -414,6 +425,18 @@ def validate_models(plans, threads, config):
                     f"plan changes are not traceable to decisions (iteration {iteration!r}, "
                     f"findings disposition present) but no decisions are recorded",
                 )
+
+    if "STATE" in checks:
+        for plan in plans:
+            for task in plan["tasks"]:
+                status = task["fields"].get("status", "")
+                if status not in VALID_TASK_STATES:
+                    add(
+                        "STATE",
+                        plan["file"],
+                        f"Task {task['id']} has invalid status {status!r}; expected one of "
+                        f"{', '.join(sorted(VALID_TASK_STATES))}",
+                    )
 
     if "INV-012" in checks:
         for plan in plans:
