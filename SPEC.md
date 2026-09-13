@@ -257,6 +257,8 @@ A task MUST have:
 - a description;
 - acceptance criteria.
 
+Each acceptance criterion MUST have a stable identifier (Section 21).
+
 A task MAY have:
 
 - dependencies;
@@ -317,8 +319,8 @@ Describe the required work.
 
 #### Acceptance
 
-- [ ] Criterion one
-- [ ] Criterion two
+- [ ] AC-P001-T001-01 — Criterion one
+- [ ] AC-P001-T001-02 — Criterion two
 
 ---
 
@@ -871,6 +873,35 @@ Validation / Derived State
 
 The normalized model is optional tooling. It MUST NOT replace Markdown as the source of truth. A repository MUST remain fully usable with only Markdown and Git.
 
+## 21. Acceptance criterion identifiers
+
+Each acceptance criterion MUST have a stable identifier of the form:
+
+```text
+AC-P###-T###-NN
+```
+
+For example:
+
+```text
+AC-P001-T002-01
+AC-P001-T002-02
+```
+
+The identifier is allocated by the Planner and MAY be allocated sequentially within a task.
+
+The following rules apply:
+
+- Criterion identity MUST remain stable when wording, status, or implementation changes.
+- Each criterion MUST belong to exactly one task.
+- The identifier format MUST be documented and validated.
+- Verification records MUST be able to reference criterion identifiers (Section 17).
+- Acceptance criteria MUST NOT be reused across tasks; moving a criterion between tasks changes its identity and requires a new identifier.
+
+### 21.1 Compatibility path
+
+Plans recorded before acceptance-criterion identifiers were defined SHOULD assign identifiers to existing acceptance criteria by task order during migration. Once assigned, identifiers MUST remain stable.
+
 ## 29. Human-readable format
 
 Markdown is the canonical default format.
@@ -899,7 +930,7 @@ Plan record (`schemas/plan.schema.json`):
 | Task `**Owner:**` | task `owner` |
 | Task description paragraph | task `description` |
 | Task `**Depends on:**` items | task `dependencies` (array of strings) |
-| Task `#### Acceptance` checkbox list | task `acceptance` (array of item text without the `- [ ]` markers) |
+| Task `#### Acceptance` checkbox list | task `acceptance` (array of objects with `id` derived from the leading `AC-...-NN` marker and `text` from the item text without the `- [ ]` marker) |
 | `### P001-T001-F001 — Finding title` heading | finding `id` and finding `title` |
 | Finding `**Status:**` | finding `status` |
 | Finding `**Severity:**` | finding `severity` |
