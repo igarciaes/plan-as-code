@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.2] - 2026-09-13
+
+### Added
+
+- Independent verification outcome for plan P001 under `.plan/verification/`: all 15 tasks (P001-T001 through P001-T015) recorded as `Verified` at independence Level 2 with reproducible evidence (closed review `R001`, invariant validator, automated test suite, conformance fixtures), and informational finding `P001-T014-F001` recording that the canonical plan `P001.md` is not yet updated (Planner-owned, tracking `R001-F003` / `P001-FB001`).
+- Feedback `P001-FB002` appended to `.plan/feedback/P001.md` summarizing the verification outcome.
+
 ## [v0.3.1] - 2026-09-13
 
 ### Changed
