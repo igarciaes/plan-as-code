@@ -954,6 +954,42 @@ Draft
 - A blocking finding MUST prevent the affected task from being derived as `Verified` or `Implemented` until it is resolved, accepted, or superseded (Section 25).
 - The derivation MUST produce the same derived state for equivalent repositories.
 
+## 23. Dependencies
+
+A task MAY declare relationships to other tasks. Each relationship MUST use one of the following types:
+
+```text
+depends-on
+blocks
+requires
+conflicts-with
+supersedes
+```
+
+### 23.1 Relationship semantics
+
+| Type | Direction | Meaning |
+|------|-----------|---------|
+| `depends-on` | task → target | The task MUST NOT start implementation until the target is implemented. |
+| `blocks` | task → target | The task impedes progress of the target until the task is completed. |
+| `requires` | task → target | The task requires an artifact or outcome produced by the target. |
+| `conflicts-with` | task → target | The task and the target MUST NOT be implemented or active in the same scope at the same time. |
+| `supersedes` | task → target | The task replaces the target; the target is no longer the intended work. |
+
+`requires` is stricter than `depends-on`: it additionally asserts that the target's outcome is available to the task.
+
+### 23.2 Validation
+
+Relationships MUST be validated for:
+
+- missing references — a reference to a task that does not exist;
+- invalid references — a reference that does not resolve to a Task entity or violates the reference format;
+- self-references — a task referencing itself;
+- dependency cycles — a cycle among `depends-on` or `requires` relationships;
+- invalid relationship combinations — combinations that contradict the semantics (for example a task both `depends-on` and `conflicts-with` the same target).
+
+Valid dependency graphs MUST pass validation. Detection of these conditions is machine-checkable (Section 28).
+
 ## 29. Human-readable format
 
 Markdown is the canonical default format.
