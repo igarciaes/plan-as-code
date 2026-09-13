@@ -4,7 +4,7 @@ description: Use to perform Plan as Code (PaC) operations — plan, implement, v
 license: MIT
 metadata:
   author: igarciaes
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Plan as Code Agent Skill
@@ -29,6 +29,26 @@ Plan, implement, and verify implementation work through durable, Git-native plan
 - Append-only feedback items (any role).
 
 ## Workflow
+
+```text
+Planner
+   ↓
+Implementation Plan
+   ↓
+Implementer
+   ↓
+Implementation Evidence
+   ↓
+Verifier
+   ↓
+Verification / Findings
+   ↓
+Planner Decision
+   ↓
+New or revised implementation task
+```
+
+The task list in a canonical plan contains **implementation tasks**. Planning and verification activities are not implementation tasks.
 
 1. Read plan.
 2. Validate role.
@@ -79,6 +99,9 @@ Plan, implement, and verify implementation work through durable, Git-native plan
 - A plan change results only from an explicit Planner decision.
 - The Implementer consumes the canonical plan rather than inferring requirements from discussion.
 - Do not create a new task ID merely because wording changes; create a new ID only for a logically distinct entity.
+- Task state MUST be derived deterministically from repository artifacts (SPEC Section 22).
+- `Verified` requires independent verification satisfying the repository's configured verification requirement (SPEC Section 26).
+- Protocol invariants (SPEC Section 28) MUST be machine-checkable; when tooling is present, run it (for example `python3 tools/validate.py --root .`).
 
 ## Feedback Rules
 

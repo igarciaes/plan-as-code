@@ -42,6 +42,45 @@ Feedback is append-only, git-managed communication associated with a task, findi
 
 The Verifier independently evaluates the plan's acceptance criteria against repository artifacts. Verification is distinct from implementation: **Implemented != Verified**. Only independent verification can produce a `Verified` state. Verification failures create findings, which can generate feedback.
 
+Verification has explicit independence levels (Level 0 self-verification through Level 4 human or externally independent verification). A repository declares the minimum level required for `Verified` in `.plan/README.md`.
+
+## How does the workflow work?
+
+```text
+Planner
+   ↓
+Implementation Plan
+   ↓
+Implementer
+   ↓
+Implementation Evidence
+   ↓
+Verifier
+   ↓
+Verification / Findings
+   ↓
+Planner Decision
+   ↓
+New or revised implementation task
+```
+
+The task list in a canonical plan contains **implementation tasks**; planning and verification activities are not implementation tasks.
+
+## What are the protocol semantics?
+
+PaC v0.2.0 makes the protocol deterministic and machine-validatable:
+
+- a normalized data model (`SPEC.md` §20) that maps canonically from Markdown;
+- stable acceptance-criterion identifiers (`AC-P###-T###-NN`);
+- deterministic task-state derivation (`SPEC.md` §22);
+- explicit dependency and entity relationships;
+- first-class planning decisions (`P###-D###`);
+- a finding lifecycle;
+- verification-independence levels;
+- standardized evidence references;
+- conformance levels (PaC Core, Agent, Verified, Automated);
+- machine-checkable protocol invariants (`SPEC.md` §28), enforced by `tools/validate.py`.
+
 ## What is the minimum repository structure?
 
 ```text
@@ -54,13 +93,16 @@ The Verifier independently evaluates the plan's acceptance criteria against repo
 
 ## Repository contents
 
-- `SPEC.md` — normative PaC v0.1.0 specification
+- `SPEC.md` — normative PaC v0.2.0 specification
 - `AGENTS.md` — instructions for agents working in this repository
 - `SKILL.md` — portable PaC agent skill
 - `.plan/` — plan and feedback storage layout
 - `examples/` — reference plan records
 - `schemas/plan.schema.json` — optional validation schema for plan records
 - `schemas/feedback.schema.json` — optional validation schema for feedback threads
+- `conformance/` — valid and invalid protocol conformance fixtures
+- `tools/validate.py` — dependency-free invariant validator (SPEC §28)
+- `tests/` — automated tests for the validator, schemas, and conformance fixtures
 - `CHANGELOG.md` — release history (Keep a Changelog)
 - `LICENSE` — MIT © 2026 igarciaes and contributors
 

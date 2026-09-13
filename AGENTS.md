@@ -6,19 +6,22 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 | Path | Role |
 |------|------|
-| `SPEC.md` | Normative PaC v0.1.0 protocol |
+| `SPEC.md` | Normative PaC v0.2.0 protocol |
 | `SKILL.md` | Portable agent skill; conformant with the Agent Skills spec |
 | `AGENTS.md` | Repository instructions (this file) |
 | `.plan/` | Plan and feedback storage layout |
 | `examples/` | Non-normative reference plan records |
 | `schemas/plan.schema.json` | Optional validation support |
 | `schemas/feedback.schema.json` | Optional validation support for feedback threads |
+| `conformance/` | Valid and invalid protocol conformance fixtures |
+| `tools/validate.py` | Dependency-free invariant validator (SPEC §28) |
+| `tests/` | Automated tests for the validator and conformance fixtures |
 | `CHANGELOG.md` | Release history (Keep a Changelog) |
 | `LICENSE` | MIT — © 2026 igarciaes and contributors |
 
 ## Source of truth
 
-`SPEC.md` is the normative source for PaC v0.1.0. When any other artifact conflicts with it, `SPEC.md` wins. Examples, the skill, and the schema are derived and must stay consistent.
+`SPEC.md` is the normative source for PaC v0.2.0. When any other artifact conflicts with it, `SPEC.md` wins. Examples, the skill, and the schema are derived and must stay consistent.
 
 ## Role Selection
 
@@ -115,12 +118,15 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 ## Building and validating
 
-This repository has no build step or automated test suite. Validation is manual:
+This repository has no build step. Validation is manual plus a dependency-free test suite:
 
+- run `python3 tools/validate.py --root .` to check protocol invariants (SPEC §28) against `.plan/`;
+- run `python3 -m unittest discover -s tests` for the automated validator, schema, and conformance fixture tests;
 - confirm `SPEC.md` is coherent and uses normative language;
 - ensure `SKILL.md` stays aligned with `SPEC.md` and conformant with the Agent Skills spec (https://agentskills.io/specification), including valid `name`, `description`, and optional `license`/`metadata` frontmatter;
 - keep examples consistent with normative format or workflow changes;
-- validate examples against `schemas/plan.schema.json` and `schemas/feedback.schema.json` when applicable, using the Markdown-to-schema projection defined in `SPEC.md` §20.1.
+- validate examples against `schemas/plan.schema.json` and `schemas/feedback.schema.json` when applicable, using the Markdown-to-schema projection defined in `SPEC.md` §29.1;
+- keep `conformance/` fixtures valid for their declared level.
 
 ## Adopting PaC
 

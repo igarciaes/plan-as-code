@@ -462,6 +462,7 @@ def load_repo_config(root):
     readme = Path(root) / ".plan" / "README.md"
     if readme.exists():
         text = readme.read_text(encoding="utf-8")
+        text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
         m = re.search(r"\*\*Verification minimum:\*\*\s*(?:Level\s*)?(\d+)", text, re.I)
         if m:
             cfg["min_verification"] = int(m.group(1))

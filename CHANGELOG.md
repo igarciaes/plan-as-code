@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Normative PaC v0.2.0 semantics in `SPEC.md`: normalized data model (§20), stable acceptance-criterion identifiers (§21), deterministic task-state derivation (§22), explicit dependencies (§23), entity relationship graph (§24), finding lifecycle (§25), verification-independence levels 0–4 (§26), conformance levels Core/Agent/Verified/Automated (§27), machine-checkable protocol invariants INV-001–INV-012 (§28), and migration guidance from v0.1.0 (§32).
+- First-class planning decisions with stable `P###-D###` identifiers (§12.1).
+- Standardized implementation and verification evidence reference types (§16.1, §17.1).
+- Dependency-free invariant validator `tools/validate.py` and an automated `tests/` suite.
+- Conformance fixtures under `conformance/` for every conformance level and every core invariant.
+- Updated optional schemas (`schemas/plan.schema.json`, `schemas/feedback.schema.json`) representing the revised model.
+
+### Changed
+
+- `SPEC.md`, `SKILL.md`, `AGENTS.md`, `README.md`, and `.plan/README.md` updated for the revised workflow, conformance levels, and verification requirements.
+- Reference examples updated to the revised format (acceptance-criterion identifiers, decisions, verification independence).
+
 ## [v0.1.0] - 2026-09-13
 
 Initial Plan as Code (PaC) specification and reference artifacts.
