@@ -1,39 +1,33 @@
 # Plan as Code
 
-Plans are stored under `plans/` in this repository.
+Plans and Tasks are stored under `plans/` and `tasks/` in this repository.
 
 ## Layout
 
-Each plan is a single Markdown file under `plans/`.
+Each Plan is a single Markdown file under `plans/`, and each Task is a single Markdown file under `tasks/`.
 
 - Plan IDs follow `P###` (for example `P001`).
 - Plan IDs are allocated by scanning `plans/` for existing records and taking the next sequential unused number.
 - Task IDs follow `P###-T###` (for example `P001-T001`).
-- Acceptance criterion IDs follow `AC-P###-T###-NN` (for example `AC-P001-T001-01`).
-- Decision IDs follow `P###-D###` (for example `P001-D001`).
-- Finding IDs follow `P###-T###-F###` (for example `P001-T001-F001`).
-- Feedback threads are stored under `feedback/`.
-- Feedback thread filenames follow the subject ID (for example `P001-T001.md`, `P001-T001-F001.md`, or `P001.md`).
-- Feedback item IDs follow `P###-T###-FB###` (for example `P001-T001-FB001`).
-- Planning iterations are represented as sections within the plan file.
+- Task filenames follow the Task ID (for example `tasks/P001-T001.md`).
+- Every Task references its parent Plan in a `**Plan:**` field.
 
 ## Status
 
-This repository uses the full PaC vocabulary from `SPEC.md`.
+This repository uses the full PaC v0.4.0 vocabulary from `SPEC.md`.
+
+Plan states: Draft, Planned, Completed, Cancelled.
 
 Task states: Draft, Planned, In Progress, Implemented, Verified, Blocked, Deferred, Cancelled.
 
-## Conformance
+## Migration status
 
-This repository targets the revised PaC v0.2.0 semantics (see `SPEC.md`). It MAY declare a conformance level and a verification minimum using the following lines:
+This repository is migrating from PaC v0.3.x. The following are pending Planner action and are intentionally left untouched:
 
-```markdown
-**Conformance:** PaC Automated
-**Verification minimum:** Level 2
-```
+- `plans/P001.md` and `plans/P002.md` still use the v0.3.x format with inline Tasks, and their Tasks have not yet been moved to `tasks/`.
+- Legacy v0.3.x records remain under `feedback/` and `verification/`.
 
-- `**Conformance:**` declares the conformance level (PaC Core, Agent, Verified, or Automated) per `SPEC.md` §27.
-- `**Verification minimum:**` declares the minimum verification-independence level required for `Verified` per `SPEC.md` §26. The invariant validator (`tools/validate.py`) reads this value.
+The invariant validator ignores records that do not conform to the current templates.
 
 ## Active plans
 
