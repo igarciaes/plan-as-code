@@ -31,7 +31,7 @@ The invariant validator ignores records that do not conform to the current templ
 
 ## Active plans
 
-None.
+- P003 — Enforce Status Transition Ownership for Tasks and Plans.
 
 ## Closed plans
 
