@@ -60,7 +60,7 @@ The task list in a canonical Plan contains **implementation tasks**. Planning an
 2. Create or update the canonical Plan under `.plan/plans/` and Tasks under `.plan/tasks/`.
 3. Record the objective, scope, constraints, tasks, dependencies, and Definition of Done.
 4. Allocate stable IDs (`P###`, `P###-T###`) by scanning existing records.
-5. Preserve stable IDs across iterations.
+5. Preserve stable IDs as Plans and Tasks evolve.
 6. Verify implemented Tasks against their Definition of Done.
 7. Mark Tasks `Verified` only when the Definition of Done is satisfied; otherwise record the reason and mark the Task `Changes Requested`.
 8. Mark Plans `Completed` only when all required Tasks are `Verified`.
