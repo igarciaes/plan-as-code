@@ -31,9 +31,10 @@ The invariant validator ignores records that do not conform to the current templ
 
 ## Active plans
 
-- P003 — Enforce Status Transition Ownership for Tasks and Plans.
+None.
 
 ## Closed plans
 
+- P003 — Enforce Status Transition Ownership for Tasks and Plans.
 - P001 — Strengthen PaC Protocol Semantics and Conformance.
 - P002 — Simplify PaC Roles, Records, and Lifecycles.
