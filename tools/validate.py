@@ -260,6 +260,29 @@ def validate_models(plans, tasks, config):
                     f"{', '.join(sorted(VALID_TASK_STATES))}",
                 )
 
+    if "INV-011" in checks:
+        for task in tasks:
+            status = task["fields"].get("status", "")
+            verified = status == "Verified" or task["verification"]["result"] == "Verified"
+            if not verified:
+                continue
+            unchecked = [
+                item["text"] for item in task["definition_of_done"] if not item["done"]
+            ]
+            if unchecked:
+                add(
+                    "INV-011",
+                    task["file"],
+                    f"Task {task['id']} is Verified but its Definition of Done has "
+                    f"unchecked condition(s): {', '.join(unchecked)}",
+                )
+            if not task["definition_of_done"]:
+                add(
+                    "INV-011",
+                    task["file"],
+                    f"Task {task['id']} is Verified but has no Definition of Done",
+                )
+
     return violations
 
 
