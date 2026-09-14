@@ -1,4 +1,4 @@
-"""Automated tests for the PaC protocol invariant validator (SPEC Section 28).
+"""Automated tests for the PaC v0.4.0 protocol invariant validator (SPEC Section 17).
 
 Runs with the standard library test runner:
 
@@ -18,14 +18,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 from validate import validate  # noqa: E402
 
 
-VALID_PLAN = """# P001 — Valid Plan
+PLAN = """# P001 — Valid Plan
 
-**Status:** Active
+**Status:** Planned
 **Scope:** `src/`
 **Planner:** planner-agent
-**Created:** 2026-09-13
-**PaC version:** v0.2.0
-**Current iteration:** 1
+**Created:** 2026-09-14
+**PaC version:** v0.4.0
 
 ## Objective
 
@@ -37,115 +36,79 @@ Objective text.
 
 ## Tasks
 
-### P001-T001 — Task one
-
-**Status:** Implemented
-**Owner:** Implementer
-
-Description.
-
-**Depends on:**
-
-- None
-
-#### Acceptance
-
-- [ ] AC-P001-T001-01 — Criterion one.
-- [ ] AC-P001-T001-02 — Criterion two.
-
----
-
-### P001-T002 — Task two
-
-**Status:** Planned
-**Owner:** Implementer
-
-Description.
-
-**Depends on:**
-
 - P001-T001
+- P001-T002
 
-#### Acceptance
+## Definition of Done
 
-- [ ] AC-P001-T002-01 — Criterion one.
-
----
-
-## Findings
-
-No findings.
-
----
-
-## Decisions
-
-No decisions.
-
----
-
-## Verification
-
-Pending.
+- [ ] Plan condition.
 """
 
-VERIFIED_PLAN = """# P001 — Verified Plan
+TASK = """# {tid} — Task title
 
-**Status:** Active
-**Scope:** `src/`
-**Planner:** planner-agent
-**Created:** 2026-09-13
-**PaC version:** v0.2.0
-**Current iteration:** 1
+**Status:** {status}
+**Owner:** {owner}
+**Plan:** {plan}
 
 ## Objective
 
-Objective text.
-
-## Tasks
-
-### P001-T001 — Task one
-
-**Status:** Verified
-**Owner:** Implementer
-
 Description.
 
 **Depends on:**
 
-- None
+- {depends}
 
-#### Acceptance
+## Definition of Done
 
-- [ ] AC-P001-T001-01 — Criterion one.
+{dod}
 
----
+## Implementation
 
-## Findings
+Implementation text.
 
-No findings.
+## Implementation Evidence
 
----
+- Commit: `abc1234`
+- Test: `npm test`
+- Result: passed
 
 ## Verification
 
-### P001-T001
-
-**Status:** Verified
-
-**Verifier:** verifier-agent
-
-**Independence:** Level 2
-
-#### Evidence
-
-- Command: `python3 tools/validate.py --root .`
-- Result: passed
-
-#### Acceptance
-
-- [x] AC-P001-T001-01 — Criterion one.
+{verification}
 """
+
+VERIFIED_VERIFICATION = """**Result:** Verified
+
+**By:** planner-agent
+
+**Date:** 2026-09-14
+
+All conditions satisfied.
+"""
+
+PENDING_VERIFICATION = """**Result:** Pending
+
+**By:** planner-agent
+
+**Date:** 2026-09-14
+"""
+
+
+def dod(items):
+    return "\n".join(f"- [{m}] {t}" for m, t in items)
+
+
+def task(tid, plan="P001", status="Planned", owner="Implementer", depends="None",
+         dod_items=(), verification=PENDING_VERIFICATION):
+    return TASK.format(
+        tid=tid,
+        status=status,
+        owner=owner,
+        plan=plan,
+        depends=depends,
+        dod=dod(dod_items) if dod_items else "- [ ] Criterion one.",
+        verification=verification,
+    )
 
 
 def write_repo(root, files):
@@ -155,167 +118,201 @@ def write_repo(root, files):
         path.write_text(content, encoding="utf-8")
 
 
-def run(root):
-    return validate(str(root), {})
+def clean_repo(plans, tasks):
+    tmp = tempfile.TemporaryDirectory()
+    root = Path(tmp.name)
+    files = {}
+    for i, content in enumerate(plans, start=1):
+        files[f".plan/plans/P{i:03d}.md"] = content
+    for name, content in tasks.items():
+        files[f".plan/tasks/{name}"] = content
+    write_repo(root, files)
+    return root, tmp
 
 
 class ValidatorTestCase(unittest.TestCase):
-    def make_repo(self, plans, feedback=None):
-        tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp.cleanup)
-        root = Path(tmp.name)
-        files = {}
-        for i, plan in enumerate(plans, start=1):
-            files[f".plan/plans/P{i:03d}.md"] = plan
-        for name, content in (feedback or {}).items():
-            files[f".plan/feedback/{name}"] = content
-        write_repo(root, files)
-        return root
+    def violations(self, root, invariant=None):
+        vs = validate(str(root), {})
+        if invariant is None:
+            return vs
+        return [v for v in vs if v["invariant"] == invariant]
 
-    def violations_for(self, root, invariant):
-        return [v for v in run(root) if v["invariant"] == invariant]
-
-    def test_valid_plan_has_no_violations(self):
-        root = self.make_repo([VALID_PLAN])
-        self.assertEqual(run(root), [])
+    def test_clean_repo_has_no_violations(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task("P001-T001", dod_items=[(" ", "Criterion one.")]),
+                "P001-T002.md": task("P001-T002", depends="P001-T001", dod_items=[(" ", "Criterion two.")]),
+            },
+        )
+        self.assertEqual(validate(str(root), {}), [])
+        tmp.cleanup()
 
     def test_inv001_duplicate_plan_ids(self):
-        root = self.make_repo([VALID_PLAN, VALID_PLAN])
-        self.assertTrue(self.violations_for(root, "INV-001"))
+        root, tmp = clean_repo(
+            [PLAN, PLAN],
+            {"P001-T001.md": task("P001-T001")},
+        )
+        self.assertTrue(self.violations(root, "INV-001"))
+        tmp.cleanup()
 
     def test_inv002_duplicate_task_ids(self):
-        dup = VALID_PLAN.replace(
-            "### P001-T002 — Task two", "### P001-T001 — Task two"
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P001-T001.md": task("P001-T001"), "P001-T001-dup.md": task("P001-T001")},
         )
-        root = self.make_repo([dup])
-        self.assertTrue(self.violations_for(root, "INV-002"))
+        self.assertTrue(self.violations(root, "INV-002"))
+        tmp.cleanup()
 
-    def test_inv003_task_belongs_to_plan(self):
-        wrong = VALID_PLAN.replace("P001-T002", "P002-T002").replace(
-            "AC-P001-T002-01", "AC-P002-T002-01"
+    def test_inv003_missing_plan_reference(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P001-T001.md": task("P001-T001", plan="P999")},
         )
-        root = self.make_repo([wrong])
-        self.assertTrue(self.violations_for(root, "INV-003"))
+        self.assertTrue(self.violations(root, "INV-003"))
+        tmp.cleanup()
 
-    def test_inv004_acceptance_belongs_to_task(self):
-        wrong = VALID_PLAN.replace("AC-P001-T002-01", "AC-P001-T001-01")
-        root = self.make_repo([wrong])
-        self.assertTrue(self.violations_for(root, "INV-004"))
-
-    def test_inv005_missing_reference(self):
-        wrong = VALID_PLAN.replace("P001-T001\n\n#### Acceptance", "P001-T999\n\n#### Acceptance")
-        root = self.make_repo([wrong])
-        self.assertTrue(self.violations_for(root, "INV-005"))
-
-    def test_inv006_dependency_cycle(self):
-        cyc = VALID_PLAN.replace(
-            "**Depends on:**\n\n- P001-T001", "**Depends on:**\n\n- P001-T001"
+    def test_inv004_task_prefix_mismatch(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P002-T001.md": task("P002-T001", plan="P001")},
         )
-        cyc = cyc.replace(
-            "### P001-T001 — Task one\n\n**Status:** Implemented",
-            "### P001-T001 — Task one\n\n**Status:** Implemented",
+        self.assertTrue(self.violations(root, "INV-004"))
+        tmp.cleanup()
+
+    def test_inv005_invalid_plan_status(self):
+        root, tmp = clean_repo(
+            [PLAN.replace("**Status:** Planned", "**Status:** Active")],
+            {"P001-T001.md": task("P001-T001")},
         )
-        cyc = cyc.replace(
-            "**Depends on:**\n\n- None\n\n#### Acceptance",
-            "**Depends on:**\n\n- P001-T002\n\n#### Acceptance",
-            1,
+        self.assertTrue(self.violations(root, "INV-005"))
+        tmp.cleanup()
+
+    def test_inv006_invalid_task_status(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P001-T001.md": task("P001-T001", status="Almost Done")},
         )
-        root = self.make_repo([cyc])
-        self.assertTrue(self.violations_for(root, "INV-006"))
+        self.assertTrue(self.violations(root, "INV-006"))
+        tmp.cleanup()
 
-    def test_inv007_verified_without_verification_record(self):
-        no_record = VERIFIED_PLAN.split("## Verification")[0] + "## Verification\n\nPending.\n"
-        root = self.make_repo([no_record])
-        self.assertTrue(self.violations_for(root, "INV-007"))
-
-    def test_inv007_min_verification_level(self):
-        root = self.make_repo([VERIFIED_PLAN])
-        write_repo(
-            root,
-            {".plan/README.md": "**Verification minimum:** Level 3\n"},
+    def test_inv007_missing_dependency(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P001-T001.md": task("P001-T001", depends="P001-T999")},
         )
-        self.assertTrue(self.violations_for(root, "INV-007"))
+        self.assertTrue(self.violations(root, "INV-007"))
+        tmp.cleanup()
 
-    def test_inv008_verified_without_evidence(self):
-        no_evidence = VERIFIED_PLAN.replace("- Command: `python3 tools/validate.py --root .`\n- Result: passed\n", "")
-        root = self.make_repo([no_evidence])
-        self.assertTrue(self.violations_for(root, "INV-008"))
-
-    def test_inv009_duplicate_finding_id(self):
-        with_finding = VALID_PLAN + """
-## Findings
-
-### P001-T001-F001 — Finding one
-
-**Status:** Open
-**Severity:** Blocking
-
-### P001-T001-F001 — Finding two
-
-**Status:** Open
-**Severity:** Blocking
-"""
-        root = self.make_repo([with_finding])
-        self.assertTrue(self.violations_for(root, "INV-009"))
-
-    def test_inv010_duplicate_feedback_item(self):
-        feedback = """# Feedback — P001-T001
-
-## P001-T001-FB001 — Clarification
-
-**Author:** Implementer
-**Date:** 2026-09-13
-
-Question?
-
----
-
-## P001-T001-FB001 — Clarification
-
-**Author:** Planner
-**Date:** 2026-09-13
-
-Answer.
-"""
-        root = self.make_repo([VALID_PLAN], feedback={"P001-T001.md": feedback})
-        self.assertTrue(self.violations_for(root, "INV-010"))
-
-    def test_inv011_plan_change_without_decision(self):
-        changed = VALID_PLAN.replace("**Current iteration:** 1", "**Current iteration:** 2")
-        root = self.make_repo([changed])
-        self.assertTrue(self.violations_for(root, "INV-011"))
-
-    def test_inv012_planner_owns_implementation_task(self):
-        owned = VALID_PLAN.replace("**Owner:** Implementer", "**Owner:** Planner")
-        root = self.make_repo([owned])
-        self.assertTrue(self.violations_for(root, "INV-012"))
-
-    def test_inv013_contradictory_relationships(self):
-        invalid = VALID_PLAN.replace(
-            "**Depends on:**\n\n- P001-T001\n\n#### Acceptance",
-            "**Depends on:**\n\n- P001-T001\n\n**Relationships:**\n\n- conflicts-with P001-T001\n\n#### Acceptance",
-            1,
+    def test_inv008_dependency_cycle(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task("P001-T001", depends="P001-T002"),
+                "P001-T002.md": task("P001-T002", depends="P001-T001"),
+            },
         )
-        root = self.make_repo([invalid])
-        self.assertTrue(self.violations_for(root, "INV-013"))
+        self.assertTrue(self.violations(root, "INV-008"))
+        tmp.cleanup()
 
-    def test_inv013_requires_and_conflicts_same_target(self):
-        invalid = VALID_PLAN.replace(
-            "**Depends on:**\n\n- P001-T001\n\n#### Acceptance",
-            "**Relationships:**\n\n- requires P001-T001\n- conflicts-with P001-T001\n\n#### Acceptance",
-            1,
+    def test_inv009_planner_owns_implementation_task(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P001-T001.md": task("P001-T001", owner="Planner")},
         )
-        root = self.make_repo([invalid])
-        self.assertTrue(self.violations_for(root, "INV-013"))
+        self.assertTrue(self.violations(root, "INV-009"))
+        tmp.cleanup()
 
-    def test_inv013_valid_relationships_pass(self):
-        valid = VALID_PLAN.replace(
-            "**Depends on:**\n\n- P001-T001\n\n#### Acceptance",
-            "**Relationships:**\n\n- requires P001-T001\n- blocks P001-T001\n\n#### Acceptance",
-            1,
+    def test_inv009_implementer_self_verifies(self):
+        verified = VERIFIED_VERIFICATION.replace("planner-agent", "implementer-agent")
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task(
+                    "P001-T001",
+                    status="Verified",
+                    owner="implementer-agent",
+                    dod_items=[("x", "Criterion one.")],
+                    verification=verified,
+                )
+            },
         )
-        root = self.make_repo([valid])
-        self.assertEqual(run(root), [])
+        self.assertTrue(self.violations(root, "INV-009"))
+        tmp.cleanup()
+
+    def test_inv010_verified_without_verification_record(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task(
+                    "P001-T001",
+                    status="Verified",
+                    dod_items=[("x", "Criterion one.")],
+                    verification=PENDING_VERIFICATION,
+                )
+            },
+        )
+        self.assertTrue(self.violations(root, "INV-010"))
+        tmp.cleanup()
+
+    def test_inv011_incomplete_definition_of_done(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task(
+                    "P001-T001",
+                    status="Verified",
+                    dod_items=[("x", "Criterion one."), (" ", "Criterion two.")],
+                    verification=VERIFIED_VERIFICATION,
+                )
+            },
+        )
+        self.assertTrue(self.violations(root, "INV-011"))
+        tmp.cleanup()
+
+    def test_inv012_plan_completion_requires_verified_tasks(self):
+        completed = PLAN.replace("**Status:** Planned", "**Status:** Completed")
+        root, tmp = clean_repo(
+            [completed],
+            {
+                "P001-T001.md": task("P001-T001", status="Implemented", dod_items=[(" ", "Criterion one.")]),
+                "P001-T002.md": task("P001-T002", depends="P001-T001"),
+            },
+        )
+        self.assertTrue(self.violations(root, "INV-012"))
+        tmp.cleanup()
+
+    def test_inv013_task_not_in_tasks_dir(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {"P001-T001.md": task("P001-T001")},
+        )
+        wrong = root / ".plan" / "plans" / "P001-T001.md"
+        wrong.write_text((root / ".plan" / "tasks" / "P001-T001.md").read_text())
+        (root / ".plan" / "tasks" / "P001-T001.md").unlink()
+        self.assertTrue(self.violations(root, "INV-013"))
+        tmp.cleanup()
+
+    def test_legacy_v03x_plan_is_ignored(self):
+        single = PLAN.replace("- P001-T002\n", "")
+        root, tmp = clean_repo(
+            [single],
+            {"P001-T001.md": task("P001-T001")},
+        )
+        legacy = root / ".plan" / "plans" / "P099.md"
+        legacy.write_text(
+            "# P099 — Legacy\n\n"
+            "**Status:** Closed\n"
+            "**Current iteration:** 1\n\n"
+            "## Tasks\n\n"
+            "## P099-T001 — Old inline task\n\n"
+            "**Status:** Verified\n"
+            "#### Acceptance\n\n- [ ] AC-P099-T001-01 — Old criterion.\n\n"
+            "## Findings\n\nNo findings.\n\n"
+            "## Verification\n\nPending.\n"
+        )
+        self.assertEqual(validate(str(root), {}), [])
+        tmp.cleanup()
 
 
 if __name__ == "__main__":

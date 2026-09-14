@@ -16,14 +16,19 @@ from validate import validate  # noqa: E402
 CONFORMANCE = Path(__file__).resolve().parent.parent / "conformance"
 
 EXPECTED_INVALID = {
-    "duplicate-id": "INV-002",
-    "missing-reference": "INV-005",
-    "cyclic-dependency": "INV-006",
-    "invalid-state": "STATE",
-    "missing-verification": "INV-007",
-    "invalid-feedback": "INV-010",
-    "invalid-ownership": "INV-012",
-    "invalid-combination": "INV-013",
+    "dependency-cycle": "INV-008",
+    "duplicate-plan-id": "INV-001",
+    "duplicate-task-id": "INV-002",
+    "incomplete-dod": "INV-011",
+    "invalid-plan-status": "INV-005",
+    "invalid-task-status": "INV-006",
+    "missing-dependency": "INV-007",
+    "missing-plan-reference": "INV-003",
+    "plan-completion": "INV-012",
+    "planner-owned-task": "INV-009",
+    "unauthorized-verification": "INV-009",
+    "verified-without-verification": "INV-010",
+    "wrong-location": "INV-013",
 }
 
 
@@ -41,7 +46,9 @@ class FixtureTestCase(unittest.TestCase):
         for root in sorted((CONFORMANCE / "invalid").iterdir()):
             with self.subTest(root=root.name):
                 violations = validate(str(root), {})
-                self.assertNotEqual(violations, [], f"invalid fixture {root.name} should fail")
+                self.assertNotEqual(
+                    violations, [], f"invalid fixture {root.name} should fail"
+                )
                 expected = EXPECTED_INVALID[root.name]
                 self.assertIn(
                     expected,

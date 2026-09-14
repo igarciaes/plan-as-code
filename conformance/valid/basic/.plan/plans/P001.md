@@ -13,4 +13,3 @@ Fixture objective.
 ## Tasks
 
 - P001-T001
-- P001-T002
