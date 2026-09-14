@@ -34,6 +34,7 @@ Plan P002 — Simplify PaC Roles, Records, and Lifecycles.
 ### Notes
 
 - Migration of this repository's own `P002.md` plan (and its Tasks) from the v0.3.x format to `.plan/tasks/` is a Planner-owned action and is pending. Legacy records under `.plan/feedback/` and `.plan/verification/` remain in place.
+- Plan P002 closed: independent verification recorded all 9 tasks (P002-T001 through P002-T009) as satisfying their Definition of Done. Plan status set to `Completed`, per-task verification records added, and `P002` moved to closed plans in `.plan/README.md`.
 
 ## [v0.3.3] - 2026-09-14
 

@@ -31,8 +31,9 @@ The invariant validator ignores records that do not conform to the current templ
 
 ## Active plans
 
-- P002 — Simplify PaC Roles, Records, and Lifecycles.
+None.
 
 ## Closed plans
 
 - P001 — Strengthen PaC Protocol Semantics and Conformance.
+- P002 — Simplify PaC Roles, Records, and Lifecycles.
