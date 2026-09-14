@@ -1,56 +1,51 @@
 ---
 name: plan-as-code
-description: Use to perform Plan as Code (PaC) operations — plan, implement, verify, and provide feedback — for implementation work with durable, Git-native plan artifacts. Follow SPEC.md when present; the specification is authoritative over this skill.
+description: Use to perform Plan as Code (PaC) operations — plan, implement, and verify — for implementation work with durable, Git-native plan and task artifacts. Follow SPEC.md when present; the specification is authoritative over this skill.
 license: MIT
 metadata:
   author: igarciaes
-  version: 0.3.3
+  version: 0.4.0
 ---
 
 # Plan as Code Agent Skill
 
 ## Goal
 
-Plan, implement, and verify implementation work through durable, Git-native plan artifacts with clear Planner, Implementer, and Verifier ownership boundaries.
+Plan, implement, and verify implementation work through durable, Git-native Plan and Task artifacts with clear Planner and Implementer ownership boundaries.
 
 ## Inputs
 
 - Repository instructions (`AGENTS.md`).
 - Plan layout instructions (`.plan/README.md`) when present.
-- The canonical plan record under `.plan/plans/`.
-- Applicable feedback threads under `.plan/feedback/`.
+- The canonical Plan record under `.plan/plans/`.
+- The applicable Task records under `.plan/tasks/`.
 - The assigned role for the current operation.
 
 ## Outputs
 
-- A canonical plan record (Planner).
+- A canonical Plan record and Task records (Planner).
 - Implementation changes with recorded evidence (Implementer).
-- Verification outcomes with recorded evidence (Verifier).
-- Append-only feedback items (any role).
+- Verified Tasks and Completed Plans (Planner).
 
 ## Workflow
 
 ```text
 Planner
    ↓
-Implementation Plan
+Plan and Tasks
    ↓
 Implementer
    ↓
 Implementation Evidence
    ↓
-Verifier
+Planner
    ↓
-Verification / Findings
-   ↓
-Planner Decision
-   ↓
-New or revised implementation task
+Verified / Changes Requested
 ```
 
-The task list in a canonical plan contains **implementation tasks**. Planning and verification activities are not implementation tasks.
+The task list in a canonical Plan contains **implementation tasks**. Planning and verification activities are not implementation tasks.
 
-1. Read plan.
+1. Read the plan.
 2. Validate role.
 3. Identify owned artifacts.
 4. Identify assigned task.
@@ -62,59 +57,38 @@ The task list in a canonical plan contains **implementation tasks**. Planning an
 ## Planner Procedure
 
 1. Read `.plan/README.md` and confirm you act as Planner.
-2. Create or update the canonical plan under `.plan/plans/`.
-3. Record the objective, scope, constraints, tasks, dependencies, and acceptance criteria.
+2. Create or update the canonical Plan under `.plan/plans/` and Tasks under `.plan/tasks/`.
+3. Record the objective, scope, constraints, tasks, dependencies, and Definition of Done.
 4. Allocate stable IDs (`P###`, `P###-T###`) by scanning existing records.
-5. Evaluate feedback and record an explicit decision; do not let feedback silently change the plan.
-6. Preserve stable IDs across iterations.
-7. Stop before modifying implementation merely to satisfy the plan.
-8. Stop before independently verifying implementation you authored.
+5. Preserve stable IDs across iterations.
+6. Verify implemented Tasks against their Definition of Done.
+7. Mark Tasks `Verified` only when the Definition of Done is satisfied; otherwise record the reason and mark the Task `Changes Requested`.
+8. Mark Plans `Completed` only when all required Tasks are `Verified`.
+9. Stop before modifying implementation merely to satisfy the plan.
 
 ## Implementer Procedure
 
 1. Read `.plan/README.md` and confirm you act as Implementer.
-2. Read the complete canonical plan before starting.
+2. Read the complete canonical Plan before starting.
 3. Implement only accepted, planner-owned tasks.
 4. Check task dependencies before starting work.
-5. Record implementation evidence (commit SHA, changed files, test command, test result).
-6. Request clarification through your own feedback items; do not infer requirements from discussion.
-7. Do not change the objective, acceptance criteria, or planner-owned decisions.
-8. Do not mark implementation as independently verified.
-9. Stop before modifying the canonical plan.
-
-## Verifier Procedure
-
-1. Read `.plan/README.md` and confirm you act as Verifier.
-2. Read the canonical plan and the current task states.
-3. Independently evaluate repository artifacts against the acceptance criteria.
-4. Record reproducible verification evidence (commands, test names, commit references).
-5. If verification fails, create a finding with a stable ID (`P###-T###-F###`).
-6. Determine verification status.
-7. Do not modify implementation merely to make verification pass.
-8. Stop before redefining requirements or changing the planning intent.
+5. Record implementation evidence (commit SHA, changed files, test command, test result) in the Task.
+6. Mark the Task `Implemented` when the work and evidence are complete.
+7. Do not change the objective or the Definition of Done.
+8. Do not mark a Task as `Verified`.
+9. Stop before modifying Planner verification or the canonical Plan.
 
 ## Decision Rules
 
-- Feedback does not automatically modify a plan.
-- A plan change results only from an explicit Planner decision.
-- The Implementer consumes the canonical plan rather than inferring requirements from discussion.
+- The Implementer consumes the canonical Plan rather than inferring requirements from discussion.
 - Do not create a new task ID merely because wording changes; create a new ID only for a logically distinct entity.
-- Task state MUST be derived deterministically from repository artifacts (SPEC Section 22).
-- `Verified` requires independent verification satisfying the repository's configured verification requirement (SPEC Section 26).
-- Protocol invariants (SPEC Section 28) MUST be machine-checkable; when tooling is present, run it (for example `python3 tools/validate.py --root .`).
-
-## Feedback Rules
-
-- Feedback is append-only communication associated with a task, a finding, or a plan.
-- Append feedback to the thread for the subject (`P001-T001`, `P001-T001-F001`, or `P001`).
-- Give each new item a new stable ID (`P001-T001-FB003`).
-- Record the author role and date.
-- Do not reorder existing feedback.
-- Do not rewrite feedback authored by another role.
+- `Implemented` is not `Verified`. Only the Planner MAY mark a Task `Verified`.
+- A Plan MAY only become `Completed` when all required Tasks are `Verified`.
+- Protocol invariants (SPEC Section 17) MUST be machine-checkable; when tooling is present, run it (for example `python3 tools/validate.py --root .`).
 
 ## Completion Criteria
 
-- Planner: the canonical plan records the objective, scope, constraints, tasks, dependencies, acceptance criteria, and any explicit decisions.
-- Implementer: accepted tasks are implemented with recorded evidence; clarification was requested through feedback when needed.
-- Verifier: acceptance criteria were independently evaluated with reproducible evidence; failures produced findings.
-- Implemented is not Verified. Only independent verification can produce `Verified`.
+- Planner: the canonical Plan and Task records record the objective, scope, constraints, tasks, dependencies, and Definition of Done.
+- Implementer: accepted tasks are implemented with recorded evidence; tasks are marked `Implemented`.
+- Planner: implemented tasks are verified against the Definition of Done, and Plans become `Completed` when all required Tasks are `Verified`.
+- Implemented is not Verified. Only Planner verification can produce `Verified`.

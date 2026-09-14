@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.0] - 2026-09-14
+
+Plan P002 — Simplify PaC Roles, Records, and Lifecycles.
+
+### Changed
+
+- `SPEC.md` rewritten for the simplified model: two roles (Planner, Implementer), two canonical records (Plan, Task), one independent file per Task under `.plan/tasks/`, Definition of Done replacing acceptance criteria, Planner-owned verification, explicit Plan and Task lifecycles, section-level ownership, and Git history as the historical timeline.
+- `tools/validate.py` rewritten for the v0.4.0 record templates and invariants `INV-001` through `INV-013`. Legacy v0.3.x records that do not conform to the current templates are ignored (SPEC §22).
+- `README.md`, `AGENTS.md`, `SKILL.md`, and `.plan/README.md` updated for the two-role, two-record model.
+- `examples/` rewritten as independent Plan and Task records.
+- `tests/` and `conformance/` rebuilt for the new model and invariants.
+
+### Added
+
+- `schemas/task.schema.json` for independent Task records.
+- `changes-requested` lifecycle state in the Task state vocabulary.
+
+### Removed
+
+- Verifier role; verification is now Planner-owned.
+- Feedback, finding, decision, verification, and iteration records from the normative model.
+- Acceptance criteria and acceptance-criterion identifiers.
+- Conformance levels and verification-independence levels.
+- Typed relationships (`blocks`, `requires`, `conflicts-with`, `supersedes`); `depends-on` remains.
+- `schemas/feedback.schema.json`.
+
+### Notes
+
+- Migration of this repository's own `P002.md` plan (and its Tasks) from the v0.3.x format to `.plan/tasks/` is a Planner-owned action and is pending. Legacy records under `.plan/feedback/` and `.plan/verification/` remain in place.
+
 ## [v0.3.3] - 2026-09-14
 
 ### Changed

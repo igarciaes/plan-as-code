@@ -6,22 +6,22 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 | Path | Role |
 |------|------|
-| `SPEC.md` | Normative PaC v0.2.0 protocol |
+| `SPEC.md` | Normative PaC v0.4.0 protocol |
 | `SKILL.md` | Portable agent skill; conformant with the Agent Skills spec |
 | `AGENTS.md` | Repository instructions (this file) |
-| `.plan/` | Plan and feedback storage layout |
-| `examples/` | Non-normative reference plan records |
-| `schemas/plan.schema.json` | Optional validation support |
-| `schemas/feedback.schema.json` | Optional validation support for feedback threads |
+| `.plan/` | Plan and task storage layout |
+| `examples/` | Non-normative reference plan and task records |
+| `schemas/plan.schema.json` | Optional validation support for plan records |
+| `schemas/task.schema.json` | Optional validation support for task records |
 | `conformance/` | Valid and invalid protocol conformance fixtures |
-| `tools/validate.py` | Dependency-free invariant validator (SPEC §28) |
+| `tools/validate.py` | Dependency-free invariant validator (SPEC §17) |
 | `tests/` | Automated tests for the validator and conformance fixtures |
 | `CHANGELOG.md` | Release history (Keep a Changelog) |
 | `LICENSE` | MIT — © 2026 igarciaes and contributors |
 
 ## Source of truth
 
-`SPEC.md` is the normative source for PaC v0.2.0. When any other artifact conflicts with it, `SPEC.md` wins. Examples, the skill, and the schema are derived and must stay consistent.
+`SPEC.md` is the normative source for PaC v0.4.0. When any other artifact conflicts with it, `SPEC.md` wins. Examples, the skill, and the schemas are derived and must stay consistent.
 
 ## Role Selection
 
@@ -33,81 +33,76 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 ## Planner Rules
 
-- An agent acting as Planner owns `.plan/plans/`.
-- Record the objective, scope, constraints, tasks, dependencies, and acceptance criteria in the canonical plan.
-- Record canonical decisions in the plan.
-- Evaluate feedback and record explicit decisions; do not let feedback silently change the plan.
+- An agent acting as Planner owns `.plan/plans/` and the planning and verification sections of Task records.
+- Record the objective, scope, constraints, tasks, dependencies, and Definition of Done in the canonical records.
+- Create and maintain Tasks under `.plan/tasks/`.
+- Evaluate completed implementation against the Task Definition of Done.
+- Mark Tasks as `Verified` only after the Definition of Done is satisfied.
+- Mark Plans as `Completed` only when all required Tasks are `Verified`.
+- Record the reason when verification fails and mark the Task `Changes Requested`.
 - Preserve stable IDs.
 - Do not modify implementation merely to satisfy the plan.
-- Do not independently verify implementation you authored.
-- Do not modify feedback authored by another role.
+- Do not execute implementation tasks.
 
 ## Implementer Rules
 
-- An agent acting as Implementer owns repository implementation artifacts (`src/`, `tests/`, `docs/`, ...).
-- Read the complete canonical plan before starting implementation.
+- An agent acting as Implementer owns repository implementation artifacts (`src/`, `tests/`, `docs/`, ...) and the implementation, evidence, and lifecycle-state sections of Task records.
+- Read the complete canonical Plan before starting implementation.
 - Implement only accepted, planner-owned tasks.
-- Record implementation evidence (for example commit SHA, changed files, test command, test result).
-- Request clarification through feedback; do not infer requirements from discussion.
+- Record implementation evidence (commit SHA, changed files, test command, test result) in the Task.
+- Mark the Task `Implemented` when the work and evidence are complete.
 - Do not change the objective.
-- Do not change acceptance criteria.
-- Do not change planner-owned decisions.
-- Do not mark implementation as independently verified.
-
-## Verifier Rules
-
-- An agent acting as Verifier owns verification outcomes.
-- Independently evaluate repository artifacts against the plan's acceptance criteria.
-- Record verification evidence (for example commands, test names, commit references).
-- Report findings when verification fails.
-- Determine verification status.
-- Do not modify implementation merely to make verification pass.
-- Do not redefine requirements.
-- Do not change the original planning intent.
+- Do not change the Definition of Done.
+- Do not mark a Task as `Verified`.
+- Do not authoritatively modify Planner verification.
 
 ## Ownership Rules
 
-- Planner owns `.plan/plans/**`.
-- Feedback is append-only and author-owned.
-- Implementer owns `src/**`, `tests/**`, `docs/**`, and any repository-defined implementation paths.
-- Verifier owns verification outputs.
-- No role modifies another role's primary artifact.
+- Planner owns `.plan/plans/**` and the planning and verification sections of `.plan/tasks/**`.
+- Implementer owns `src/**`, `tests/**`, `docs/**`, the repository-defined implementation paths, and the implementation and evidence sections of `.plan/tasks/**`.
+- No role modifies another role's primary artifact or section.
 
 ## Plan Consumption
 
-- An Implementer MUST read the complete plan before starting implementation.
-- An Implementer MUST consume the canonical plan rather than infer requirements from discussion.
+- An Implementer MUST read the complete Plan before starting implementation.
+- An Implementer MUST consume the canonical Plan rather than infer requirements from discussion.
 - Before operating, read `.plan/README.md` for the layout, ID formats, and active plans.
 - Check task dependencies before starting work.
 
-## Feedback Rules
+## Workflow
 
-- Feedback is append-only communication associated with a task, a finding, or a plan.
-- Append feedback as a new item with a new stable ID.
-- Record the author role and date.
-- Do not reorder existing feedback.
-- Do not rewrite feedback authored by another role.
-- Feedback does not modify the plan. The Planner records an explicit decision in the canonical plan.
+```text
+Planner
+   ↓
+Plan and Tasks
+   ↓
+Implementer
+   ↓
+Implementation Evidence
+   ↓
+Planner
+   ↓
+Verified / Changes Requested
+```
 
 ## Verification Rules
 
-- Only independent verification can produce `Verified`.
-- Implemented is not Verified.
-- Evaluate repository artifacts rather than rely solely on implementation claims.
-- If verification fails, create a finding.
-- A finding can generate feedback.
+- Only the Planner MAY mark a Task as `Verified`.
+- `Implemented` is not `Verified`.
+- Verification evaluates the Task's Definition of Done.
+- Failed verification MUST record the reason in the Task and mark it `Changes Requested`.
+- A Plan MAY only become `Completed` when all required Tasks are `Verified`.
 
 ## Prohibited Actions
 
-- Modifying another role's primary artifact.
-- Changing acceptance criteria.
-- Silently modifying the canonical plan in response to feedback.
-- Rewriting feedback authored by another role.
-- Reordering existing feedback items.
+- Modifying another role's primary artifact or section.
+- Changing the objective or Definition of Done.
+- Marking a Task as `Verified` as the Implementer.
+- Executing implementation Tasks as the Planner.
 - Claiming verification without evidence.
-- Marking your own implementation as independently verified.
 - Changing stable IDs when wording or status changes.
 - Introducing a database or requiring a central service for state.
+- Duplicating Git history into event or iteration records.
 
 ## Working in this repository
 
@@ -120,13 +115,13 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 This repository has no build step. Validation is manual plus a dependency-free test suite:
 
-- run `python3 tools/validate.py --root .` to check protocol invariants (SPEC §28) against `.plan/`;
+- run `python3 tools/validate.py --root .` to check protocol invariants (SPEC §17) against `.plan/`;
 - run `python3 -m unittest discover -s tests` for the automated validator, schema, and conformance fixture tests;
 - confirm `SPEC.md` is coherent and uses normative language;
 - ensure `SKILL.md` stays aligned with `SPEC.md` and conformant with the Agent Skills spec (https://agentskills.io/specification), including valid `name`, `description`, and optional `license`/`metadata` frontmatter;
 - keep examples consistent with normative format or workflow changes;
-- validate examples against `schemas/plan.schema.json` and `schemas/feedback.schema.json` when applicable, using the Markdown-to-schema projection defined in `SPEC.md` §29.1;
-- keep `conformance/` fixtures valid for their declared level.
+- validate examples against `schemas/plan.schema.json` and `schemas/task.schema.json` when applicable, using the Markdown-to-schema projection defined in `SPEC.md` §20.1;
+- keep `conformance/` fixtures valid for their declared intent.
 
 ## Adopting PaC
 
