@@ -595,7 +595,7 @@ INV-006 — Task status is valid.
 INV-007 — Dependency targets exist.
 INV-008 — Dependency cycles are rejected.
 INV-009 — Only the Planner marks a Task Verified.
-INV-010 — Verified requires a Planner verification record.
+INV-010 — Verified requires a Planner verification record; Changes Requested requires a recorded reason.
 INV-011 — A Verified Task satisfies its Definition of Done.
 INV-012 — A Plan is Completed only when all required Tasks are Verified.
 INV-013 — Records are stored in the defined layout.

@@ -18,7 +18,7 @@ This repository uses the full PaC v0.4.0 vocabulary from `SPEC.md`.
 
 Plan states: Draft, Planned, Completed, Cancelled.
 
-Task states: Draft, Planned, In Progress, Implemented, Verified, Blocked, Deferred, Cancelled.
+Task states: Draft, Planned, In Progress, Implemented, Verified, Changes Requested, Blocked, Deferred, Cancelled.
 
 ## Migration status
 

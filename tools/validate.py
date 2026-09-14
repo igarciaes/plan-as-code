@@ -46,6 +46,7 @@ VALID_TASK_STATES = {
     "In Progress",
     "Implemented",
     "Verified",
+    "Changes Requested",
     "Blocked",
     "Deferred",
     "Cancelled",
@@ -281,6 +282,72 @@ def validate_models(plans, tasks, config):
                     "INV-011",
                     task["file"],
                     f"Task {task['id']} is Verified but has no Definition of Done",
+                )
+
+    if "INV-009" in checks:
+        for task in tasks:
+            owner = task["fields"].get("owner", "")
+            status = task["fields"].get("status", "")
+            verifier = task["verification"]["by"]
+            if owner.lower() == "planner":
+                add(
+                    "INV-009",
+                    task["file"],
+                    f"Task {task['id']} is owned by the Planner; the Planner MUST NOT execute implementation tasks",
+                )
+            verified = status == "Verified" or task["verification"]["result"] == "Verified"
+            if verified and verifier and owner and verifier.lower() == owner.lower():
+                add(
+                    "INV-009",
+                    task["file"],
+                    f"Task {task['id']} was marked Verified by its Implementer "
+                    f"({owner}); only the Planner MAY mark a Task Verified",
+                )
+
+    if "INV-010" in checks:
+        for task in tasks:
+            status = task["fields"].get("status", "")
+            ver = task["verification"]
+            if status == "Verified" and ver["result"] != "Verified":
+                add(
+                    "INV-010",
+                    task["file"],
+                    f"Task {task['id']} has status Verified but its verification result "
+                    f"is {ver['result']!r}",
+                )
+            if status == "Verified" and not ver["by"]:
+                add(
+                    "INV-010",
+                    task["file"],
+                    f"Task {task['id']} is Verified but has no Planner verification record",
+                )
+            if ver["result"] == "Verified" and status != "Verified":
+                add(
+                    "INV-010",
+                    task["file"],
+                    f"Task {task['id']} has verification result Verified but status is "
+                    f"{status!r}; Implemented does not imply Verified",
+                )
+            if status == "Changes Requested":
+                if ver["result"] != "Changes Requested":
+                    add(
+                        "INV-010",
+                        task["file"],
+                        f"Task {task['id']} has status Changes Requested but its verification "
+                        f"result is {ver['result']!r}",
+                    )
+                if not ver["reason"]:
+                    add(
+                        "INV-010",
+                        task["file"],
+                        f"Task {task['id']} is Changes Requested but no reason is recorded",
+                    )
+            if ver["result"] == "Changes Requested" and status != "Changes Requested":
+                add(
+                    "INV-010",
+                    task["file"],
+                    f"Task {task['id']} has verification result Changes Requested but status "
+                    f"is {status!r}",
                 )
 
     return violations
