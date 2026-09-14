@@ -2,7 +2,7 @@
 
 ## Version
 
-**PaC v0.3.3**
+**PaC v0.4.0**
 
 ## 1. Purpose
 
@@ -13,13 +13,12 @@ PaC applies to implementation planning of any repository artifact — source cod
 The goals of PaC are to:
 
 - make implementation plans durable and version controlled;
-- provide stable identifiers for plans, tasks, findings, and feedback;
-- separate the Planner, Implementer, and Verifier roles with clear ownership boundaries;
+- provide stable identifiers for plans and tasks;
+- separate the Planner and Implementer roles with clear ownership boundaries;
 - remain easy for humans to read and edit;
 - provide explicit semantics for AI agents;
-- keep feedback append-only and decision-relevant;
-- record explicit planning decisions rather than inferring requirements from discussion;
-- support independent implementation and verification;
+- keep Git history as the historical timeline;
+- make implementation state derivable from repository artifacts;
 - minimize merge conflicts;
 - allow optional machine validation without making machine formats canonical.
 
@@ -43,45 +42,35 @@ Plan artifacts MUST be human-readable. Markdown is the canonical default represe
 
 Plan artifacts MUST be version controlled alongside the work they describe. Git and the repository filesystem MUST remain the system of record.
 
+Git history is the historical timeline. The protocol MUST NOT require event records, iteration records, or any other artifact that duplicates history that Git already provides.
+
 ### 3.3 Role separation
 
-The Planner owns planning intent. The Implementer owns implementation. The Verifier owns verification outcomes.
+The Planner owns planning intent and verification. The Implementer owns implementation.
 
-No role MUST modify another role's primary artifact.
+No role MUST modify another role's primary artifact or section.
 
-### 3.4 Explicit decisions
-
-Feedback does not automatically modify a plan.
-
-A plan change MUST result from an explicit Planner decision. The Implementer MUST consume the canonical plan rather than infer requirements from discussion.
-
-### 3.5 Independent verification
+### 3.4 Distinct operations
 
 Implementation and verification are distinct operations.
 
-**Implemented != Verified.** Only independent verification can produce a `Verified` task state.
+**Implemented != Verified.** Only the Planner MAY mark a Task as `Verified`, and only against the Task's Definition of Done.
 
-### 3.6 Stable identity
+### 3.5 Stable identity
 
-Plans, tasks, findings, and feedback items MUST have stable identifiers.
+Plans and tasks MUST have stable identifiers.
 
 Identifiers MUST NOT change when wording, status, or implementation changes.
 
-### 3.7 Append-only feedback
+### 3.6 Derived state
 
-Feedback MUST be append-only and owned by its author.
-
-An agent MUST NOT rewrite feedback authored by another role.
-
-### 3.8 Derived state
-
-State SHOULD be derived from plan artifacts rather than stored in a central mutable record.
+State SHOULD be derived from plan and task artifacts rather than stored in a central mutable record.
 
 Do NOT introduce a database or require a central service.
 
-### 3.9 Merge-conflict minimization
+### 3.7 Merge-conflict minimization
 
-Plan and feedback artifacts SHOULD be isolated by file to minimize merge conflicts. See Section 18.
+Plan and task artifacts SHOULD be isolated by file to minimize merge conflicts. See Section 12.
 
 ## 4. Terminology
 
@@ -93,45 +82,17 @@ A durable implementation planning artifact describing the intended outcome of a 
 
 A unit of planned implementation work within a plan.
 
-### Finding
-
-A discovered issue that prevents successful completion or verification. A finding is not a task. A task represents intended work; a finding represents a discovered deviation or failure.
-
-### Feedback
-
-Append-only communication associated with a task, a finding, or a plan.
-
-### Feedback item
-
-A feedback record within a feedback thread. Each feedback item has a stable identifier.
-
-### Feedback thread
-
-The ordered set of feedback items associated with a single subject (a plan, task, or finding).
-
-### Feedback author
-
-The person or agent who wrote a feedback item. The author owns their own feedback items.
-
-### Planning iteration
-
-One revision of a plan that preserves the stable identities of its plans, tasks, and findings.
-
 ### Planner
 
-The role that owns planning intent and planning artifacts.
+The role that owns planning intent, planning artifacts, and verification.
 
 ### Implementer
 
 The role that owns repository implementation artifacts and implements planned tasks.
 
-### Verifier
+### Definition of Done
 
-The role that independently evaluates acceptance criteria and records verification outcomes.
-
-### Acceptance criteria
-
-Observable conditions that must be satisfied before a task is considered implemented.
+The observable conditions that MUST be satisfied before the Planner can verify a Task.
 
 ### Scope
 
@@ -141,37 +102,17 @@ The set of artifacts covered by a plan, expressed as file paths, directory paths
 
 Non-functional or architectural limits that bound how a plan may be implemented.
 
+### Dependency
+
+An ordering constraint between tasks: a task MUST NOT start implementation until the tasks it depends on are implemented.
+
 ### Implementation evidence
 
 Git-native references that record how a task was implemented.
 
-### Planning decision
+### Verification
 
-An explicit, recorded Planner determination that changes or confirms the canonical plan.
-
-### Acceptance criterion identifier
-
-A stable identifier of the form `AC-P###-T###-NN` that identifies a single acceptance criterion within a task. Criterion identity is independent of its text.
-
-### Verification outcome
-
-A recorded Verifier determination of whether a task's acceptance criteria were satisfied, including its verification-independence level and evidence references.
-
-### Verification evidence
-
-Git-native references that record how a task was verified.
-
-### Entity relationship
-
-A typed connection between two PaC entities (for example a Task dependency, or a Finding's reference to a Task), addressed by stable identifiers.
-
-### Dependency
-
-A typed ordering or availability constraint between tasks (for example `depends-on`, `blocks`, `requires`, `conflicts-with`, `supersedes`).
-
-### Conformance level
-
-A named tier of PaC conformance (Core, Agent, Verified, Automated) defining the protocol features a repository or tool supports.
+The Planner's evaluation of a Task's implementation against its Definition of Done.
 
 ### Protocol invariant
 
@@ -187,13 +128,20 @@ The default layout is:
 .plan/
 ├── README.md
 ├── plans/
-│   ├── P001.md
 │   ├── P002.md
 │   └── P003.md
-└── feedback/
-    ├── P001-T001.md
-    └── P001-T001-F001.md
+└── tasks/
+    ├── P002-T001.md
+    ├── P002-T002.md
+    └── P003-T001.md
 ```
+
+Plans and Tasks MUST be independently addressable files:
+
+- each Plan MUST have its own file under `plans/`;
+- each Task MUST have its own file under `tasks/`;
+- a Task MUST NOT be defined inline in its parent Plan;
+- a Task MUST NOT require modification of its parent Plan during implementation.
 
 Repositories MAY define another layout in `.plan/README.md`.
 
@@ -207,13 +155,9 @@ Before allocating a new plan ID, an agent SHOULD scan the existing plan records 
 
 It SHOULD document:
 
-- the plan layout and the paths of plan records;
-- the feedback layout and the paths of feedback threads;
+- the plan layout and the paths of plan and task records;
 - the plan ID convention (for example `P###`);
 - the task ID convention (for example `P###-T###`);
-- the finding ID convention (for example `P###-T###-F###`);
-- the feedback item ID convention (for example `P###-T###-FB###`);
-- how planning iterations are represented;
 - the controlled status vocabulary when a subset is used;
 - the active plans when useful.
 
@@ -221,11 +165,11 @@ It MAY override the default layout described above.
 
 It MUST remain human-readable and SHOULD be readable by agents for discovery.
 
-## 6. Plans
+## 6. Plan record
 
-Each plan MUST be a single Markdown file under `.plan/plans/`.
+A Plan MUST be a single Markdown file under `.plan/plans/`.
 
-A plan MUST have:
+A Plan MUST have:
 
 - a stable ID;
 - a title;
@@ -233,46 +177,15 @@ A plan MUST have:
 - a scope;
 - a Planner identity;
 - creation metadata;
-- a planning iteration;
 - an objective;
 - constraints;
-- tasks.
+- a task list.
 
-A plan MAY have findings, decisions, and verification sections.
+A Plan MAY have included and excluded scope items and a Plan Definition of Done.
 
-The recommended plan template is defined in Section 8.
+A Plan ID uses the recommended format `P###` (for example `P001`).
 
-A plan ID uses the recommended format `P###` (for example `P001`).
-
-## 7. Tasks
-
-A task represents a unit of planned implementation work within a plan.
-
-A task MUST have:
-
-- a stable ID;
-- a title;
-- a status;
-- an owner role;
-- a description;
-- acceptance criteria.
-
-Each acceptance criterion MUST have a stable identifier (Section 21).
-
-A task MAY have:
-
-- dependencies;
-- scope;
-- constraints;
-- findings;
-- implementation references;
-- verification references.
-
-A task ID uses the recommended format `P###-T###` (for example `P001-T001`).
-
-## 8. Plan format
-
-The canonical plan template is:
+The canonical Plan template is:
 
 ````markdown
 # P001 — Title
@@ -281,16 +194,13 @@ The canonical plan template is:
 **Scope:** `path/`
 **Planner:** planner-agent
 **Created:** YYYY-MM-DD
-**PaC version:** v0.2.0
-**Current iteration:** 1
+**PaC version:** v0.4.0
 
 ## Objective
 
 Describe the intended outcome.
 
 ## Scope
-
-Describe included and excluded artifacts.
 
 ### Included
 
@@ -306,10 +216,54 @@ Describe included and excluded artifacts.
 
 ## Tasks
 
-### P001-T001 — Task title
+- P001-T001
+- P001-T002
+
+## Definition of Done
+
+The Plan is ready to be marked `Completed` when:
+
+- [ ] Condition one.
+- [ ] Condition two.
+````
+
+The template MUST remain intentionally simple.
+
+Do NOT add implementation details unless they are required constraints.
+
+## 7. Task record
+
+A Task MUST be a single Markdown file under `.plan/tasks/`.
+
+A Task MUST have:
+
+- a stable ID;
+- a title;
+- a status;
+- an owner role;
+- a reference to its parent Plan;
+- an objective;
+- a Definition of Done.
+
+A Task MAY have:
+
+- dependencies;
+- an implementation description;
+- implementation evidence;
+- a verification section.
+
+A Task ID uses the recommended format `P###-T###` (for example `P001-T001`).
+
+The canonical Task template is:
+
+````markdown
+# P001-T001 — Title
 
 **Status:** Planned
 **Owner:** Implementer
+**Plan:** P001
+
+## Objective
 
 Describe the required work.
 
@@ -317,640 +271,303 @@ Describe the required work.
 
 - None
 
-#### Acceptance
+## Definition of Done
 
-- [ ] AC-P001-T001-01 — Criterion one
-- [ ] AC-P001-T001-02 — Criterion two
+- [ ] Condition one.
+- [ ] Condition two.
 
----
+## Implementation
 
-## Findings
+Describe the implementation approach, if applicable.
 
-No findings.
-
----
-
-## Decisions
-
-No decisions.
-
----
-
-## Verification
-
-Pending.
-````
-
-The template MUST remain intentionally simple.
-
-Do NOT add implementation details unless they are required constraints.
-
-## 9. Planning iterations
-
-Plans MUST support evolution without changing stable IDs.
-
-A planning iteration is one revision of a plan. Iterations are represented as human-readable sections or records within the plan file, for example:
-
-```markdown
-## Iteration 1 — Initial Plan
-
-Initial task definition.
-
-## Iteration 2 — Clarification
-
-Clarified provider extension requirements.
-
-## Iteration 3 — Verification Follow-up
-
-Addressed verification finding.
-```
-
-The following IDs MUST remain stable across iterations:
-
-```text
-P001
-P001-T001
-P001-T001-F001
-```
-
-Do NOT create a new task ID merely because wording changes.
-
-Create a new ID only for a logically distinct entity.
-
-## 10. Task states
-
-The normative task states are:
-
-```text
-Draft
-Planned
-In Progress
-Implemented
-Verified
-Blocked
-Deferred
-Cancelled
-```
-
-The semantics are:
-
-| State       | Meaning                             |
-| ----------- | ----------------------------------- |
-| Draft       | Task is incomplete                  |
-| Planned     | Task is approved for implementation |
-| In Progress | Implementation has started          |
-| Implemented | Implementer reports completion      |
-| Verified    | Independent verification succeeded  |
-| Blocked     | Progress cannot continue            |
-| Deferred    | Work intentionally postponed        |
-| Cancelled   | Work intentionally abandoned        |
-
-**Implemented != Verified.**
-
-Only independent verification can produce the `Verified` state. An Implementer MUST NOT mark a task as Verified.
-
-Deterministic derivation of task state from repository artifacts is defined in Section 22.
-
-## 11. Feedback
-
-Feedback represents append-only communication associated with a task, a finding, or a plan.
-
-A feedback thread MUST be stored outside the plan record, in the repository's feedback layout (Section 5), using the naming convention:
-
-```text
-<subject-id>.md
-```
-
-For example:
-
-```text
-P001-T001.md
-P001-T001-F001.md
-P001.md
-```
-
-A feedback item MUST have:
-
-- a stable ID;
-- an author;
-- a date;
-- content.
-
-A feedback item MUST NOT silently modify the canonical plan.
-
-Each feedback item MUST have a stable identifier within its thread. The recommended feedback item ID format is derived from the subject ID:
-
-```text
-P001-T001-FB001
-P001-T001-FB002
-P001-T001-F001-FB001
-```
-
-Feedback items MUST be append-only. New items MUST receive new stable IDs. Previously recorded items MUST retain their original IDs and content.
-
-Feedback items are owned by their author. A Planner MUST NOT modify an Implementer's feedback items, and an Implementer MUST NOT modify a Planner's feedback items.
-
-Example:
-
-```markdown
-# Feedback — P001-T001
-
-## P001-T001-FB001 — Clarification
-
-**Author:** Implementer
-**Date:** YYYY-MM-DD
-
-Does the provider abstraction need to support
-multiple providers initially?
-
----
-
-## P001-T001-FB002 — Decision
-
-**Author:** Planner
-**Date:** YYYY-MM-DD
-
-The first implementation MUST support one provider.
-
-The abstraction SHOULD support future providers.
-```
-
-## 12. Decision recording
-
-Feedback does not automatically modify a plan.
-
-The canonical decision rule is:
-
-```text
-Feedback
-   │
-   ▼
-Planner evaluates
-   │
-   ▼
-Explicit decision
-   │
-   ▼
-Canonical plan update
-```
-
-A plan change MUST result from an explicit Planner decision.
-
-The Implementer MUST consume the canonical plan rather than infer requirements from discussion.
-
-Decisions SHOULD record the outcome and a concise rationale. The plan record SHOULD record the result of a discussion, not reproduce the discussion.
-
-### 12.1 Decision records
-
-A planning decision MUST have a stable identifier of the form:
-
-```text
-P###-D###   (for example P001-D001)
-```
-
-Decision identifiers MUST remain stable across planning iterations.
-
-A decision record MUST capture:
-
-- **context** — the circumstances or feedback leading to the decision;
-- **decision** — the Planner's determination;
-- **rationale** — why the decision was made;
-- **affected entities** — the stable IDs of the plans, tasks, or acceptance criteria affected;
-- **resulting changes** — the changes made to the canonical plan.
-
-A decision MAY reference the findings and feedback items that informed it. Plan changes MUST be traceable to decisions.
-
-The workflow is:
-
-```text
-Feedback
-    ↓
-Planner decision
-    ↓
-Plan change
-```
-
-A feedback item MUST NOT directly modify the plan.
-
-Example decision record:
-
-````markdown
-## Decisions
-
-### P001-D001 — Restrict initial provider support
-
-**Context:** Feedback in the P001-T001 thread asked whether multiple providers must be supported initially.
-**Decision:** The first implementation MUST support one provider.
-**Rationale:** Limits scope while preserving the abstraction for future providers.
-**Affected:** P001-T001
-**Resulting changes:** Constraint "only one provider initially" added to P001-T001.
-````
-
-## 13. Ownership
-
-### 13.1 Planner
-
-The Planner owns:
-
-```text
-.plan/plans/
-```
-
-The Planner is responsible for:
-
-- objectives;
-- scope;
-- constraints;
-- tasks;
-- dependencies;
-- acceptance criteria;
-- planning decisions.
-
-The Planner MUST NOT:
-
-- modify implementation merely to satisfy the plan;
-- independently verify implementation they authored;
-- modify another author's feedback.
-
-### 13.2 Implementer
-
-The Implementer owns repository implementation artifacts:
-
-```text
-src/
-tests/
-docs/
-```
-
-The Implementer is responsible for:
-
-- implementing tasks;
-- adding tests;
-- recording implementation evidence when required;
-- requesting clarification through feedback.
-
-The Implementer MUST NOT:
-
-- change the objective;
-- change acceptance criteria;
-- change planner-owned decisions;
-- mark implementation as independently verified.
-
-### 13.3 Verifier
-
-The Verifier owns verification outcomes.
-
-The Verifier is responsible for:
-
-- evaluating acceptance criteria;
-- recording verification evidence;
-- reporting findings;
-- determining verification status.
-
-The Verifier MUST NOT:
-
-- modify implementation merely to make verification pass;
-- redefine requirements;
-- change the original planning intent.
-
-### 13.4 General
-
-The same person or agent MAY perform different roles at different times, but MUST respect the ownership boundaries of the current operation.
-
-## 14. Workflow
-
-### 14.1 Create a plan
-
-The Planner creates a plan record for a defined objective and scope.
-
-### 14.2 Planning iteration
-
-The Planner defines tasks, dependencies, constraints, and acceptance criteria.
-
-### 14.3 Clarification
-
-Participants MAY exchange substantive clarification through feedback threads (Section 11).
-
-### 14.4 Decision
-
-The Planner evaluates feedback and records an explicit decision in the canonical plan (Section 12).
-
-### 14.5 Implementation
-
-The Implementer reads the canonical plan and implements accepted tasks, recording implementation evidence (Section 16).
-
-### 14.6 Verification
-
-The Verifier independently evaluates the acceptance criteria and records verification outcomes (Section 17).
-
-### 14.7 Findings
-
-If verification fails or progress is prevented, a finding is created (Section 25).
-
-### 14.8 Additional iterations
-
-If further work is required, the plan continues with another planning iteration. Stable IDs are preserved (Section 9).
-
-## 15. Workflow model
-
-```text
-Planner
-  │
-  │ owns intent and planning
-  ▼
-Plan Artifact
-  │
-  │ consumed by
-  ▼
-Implementer
-  │
-  │ owns implementation
-  ▼
-Repository Artifacts
-  │
-  │ independently evaluated by
-  ▼
-Verifier
-  │
-  ▼
-Verification Outcome
-```
-
-And every role MUST stop at its ownership boundary:
-
-```text
-Planner
-  │
-  └── defines what
-
-Implementer
-  │
-  └── defines how
-
-Verifier
-  │
-  └── determines whether
-```
-
-## 16. Implementation evidence
-
-Implementation evidence SHOULD reference Git-native artifacts.
-
-Examples:
-
-```text
-Commit SHA
-Pull request
-Changed file
-Test command
-Test result
-```
-
-Do NOT create a mandatory implementation database.
-
-The exact storage location for implementation evidence MAY be configured. The default implementation SHOULD avoid requiring additional mutable files.
-
-### 16.1 Evidence reference types
-
-Implementation evidence SHOULD use one of the following reference types:
-
-```text
-commit
-pull-request
-file
-test
-command
-artifact
-```
-
-A structured implementation evidence reference SHOULD record:
-
-- **type** — one of the reference types above;
-- **value** — a Git-native reference (for example a commit SHA or file path);
-- **task** — the task the evidence implements;
-- **acceptance** — the acceptance criteria it satisfies, where applicable.
-
-Implementation evidence MUST be linkable to the task it implements and, where applicable, to the acceptance criteria it satisfies.
-
-Example:
-
-````markdown
 ## Implementation Evidence
-
-### P001-T001
-
-**Commit:** `abc1234`
-
-**Changed:**
-
-- `src/auth/provider.ts`
-- `tests/auth/provider.test.ts`
-
-**Tests:**
-
-```text
-npm test
-```
-
-**Result:** Passed
-````
-
-## 17. Verification
-
-The Verifier MUST evaluate the plan's acceptance criteria.
-
-Example:
-
-```markdown
-## Verification
-
-### P001-T001
-
-**Status:** Verified
-
-**Verifier:** verifier-agent
-
-#### Evidence
 
 - Commit: `abc1234`
 - Test: `npm test`
 - Result: passed
 
-#### Acceptance
+## Verification
 
-- [x] OAuth authentication succeeds.
-- [x] Authentication failures are handled.
-- [x] Existing authentication remains functional.
-```
+**Result:** Pending
 
-If verification fails, create a finding.
+**By:** planner-agent
+**Date:** YYYY-MM-DD
+````
 
-### 17.1 Verification evidence
+The template MUST remain intentionally simple.
 
-Verification evidence SHOULD use one of the following reference types:
+## 8. Plan lifecycle
 
-```text
-test-result
-command
-review
-report
-artifact
-acceptance-evaluation
-```
-
-Each verification evidence reference MUST record an outcome. Verification evidence MUST be linkable to the task and, where applicable, to the acceptance criteria it evaluates. Verification records MUST identify the verification-independence level used (Section 26).
-
-Example:
-
-```markdown
-### P001-T001-F001 — Authentication regression
-
-**Status:** Open
-**Severity:** Blocking
-
-Existing password authentication fails.
-
-#### Expected
-
-Existing authentication MUST remain functional.
-
-#### Evidence
+The Plan lifecycle is:
 
 ```text
-npm test -- auth
+Draft → Planned → Completed
+              ↘ Cancelled
 ```
 
-Result: failure.
-```
+### 8.1 Draft
 
-## 18. Merge-conflict minimization
+The Plan is being prepared.
 
-### Rule 1
+Scope, Tasks, dependencies, and Definition of Done may still change.
 
-One plan per file.
+### 8.2 Planned
+
+The Plan is ready for implementation.
+
+Required Tasks have been identified and the Planner considers the Plan sufficiently defined.
+
+### 8.3 Completed
+
+The Plan has been successfully completed.
+
+A Plan MUST NOT be marked `Completed` while any required Task is not `Verified`.
+
+For the purpose of this rule, a required Task is any Task belonging to the Plan that is not `Cancelled`.
+
+### 8.4 Cancelled
+
+The Plan will not be implemented.
+
+`Cancelled` is a terminal state.
+
+## 9. Task lifecycle
+
+The Task lifecycle is:
 
 ```text
-plans/P001.md
-plans/P002.md
+Draft → Planned → In Progress → Implemented → Verified
+                                      │
+                                      ▼
+                              Changes Requested
+                                      │
+                                      ▼
+                                In Progress
 ```
 
-Do NOT use a single file (for example `plans.yaml`) containing every plan.
+Tasks MAY additionally transition to `Blocked`, `Deferred`, or `Cancelled` according to the rules defined below.
 
-### Rule 2
+### 9.1 Draft
 
-One feedback subject per file.
+The Task is being defined.
+
+### 9.2 Planned
+
+The Task is ready for implementation.
+
+### 9.3 In Progress
+
+The Implementer is actively working on the Task.
+
+### 9.4 Implemented
+
+The Implementer considers the implementation complete and has provided the required evidence.
+
+`Implemented` does not mean verified.
+
+### 9.5 Changes Requested
+
+The Planner has reviewed the implementation and determined that the Definition of Done has not been satisfied.
+
+The Task returns to `In Progress` when implementation resumes.
+
+The reason for a failed verification MUST be recorded in the Task's verification section.
+
+### 9.6 Verified
+
+The Planner has verified that the Definition of Done is satisfied.
+
+`Verified` is the successful terminal state of a Task.
+
+Only the Planner MAY transition a Task to `Verified`.
+
+### 9.7 Blocked
+
+Work cannot proceed because of an external dependency or unresolved blocker.
+
+### 9.8 Deferred
+
+The Task is intentionally postponed.
+
+### 9.9 Cancelled
+
+The Task will not be implemented.
+
+`Cancelled` is a terminal state.
+
+## 10. Definition of Done
+
+A Task's Definition of Done describes the observable conditions that must be satisfied before the Planner can verify the Task.
+
+The Definition of Done is part of the Task record.
+
+Typical conditions include:
+
+- Implementation is complete.
+- Required tests pass.
+- Required documentation is updated.
+- Implementation evidence is provided.
+- Planner verification is complete.
+
+The Definition of Done replaces acceptance criteria. No separate Acceptance Criterion records or IDs exist.
+
+Each condition is represented as a checkbox in the Task record. A condition is satisfied when its checkbox is checked.
+
+Before marking a Task `Verified`, the Planner MUST confirm that every Definition of Done condition is satisfied.
+
+## 11. Implementation
+
+Implementation details belong to the Task record.
+
+The Implementer owns:
+
+- `Implementation`
+- `Implementation Evidence`
+- the Task's implementation lifecycle state
+
+Implementation evidence MAY reference:
+
+- Git commits
+- Pull requests
+- Changed files
+- Test commands
+- Test results
+- Build results
+- Generated artifacts
+
+## 12. Verification
+
+Verification belongs to the Task record and is owned by the Planner.
+
+The Planner verifies the implementation against the Task's Definition of Done.
+
+Successful verification results in:
 
 ```text
-feedback/P001-T001.md
-feedback/P001-T002.md
+Implemented → Verified
 ```
 
-### Rule 3
-
-Append feedback.
-
-Do NOT reorder existing feedback.
-
-Do NOT rewrite another author's feedback.
-
-### Rule 4
-
-Avoid central mutable status files.
-
-Do NOT create:
+Failed verification results in:
 
 ```text
-status.yaml
-dashboard.json
-tasks.yaml
+Implemented → Changes Requested
 ```
 
-if multiple agents need to modify them.
+The reason for a failed verification MUST be recorded in the Task.
 
-State SHOULD be derived from plan artifacts.
+The verification section MUST record:
 
-## 19. Ownership enforcement
+- the result (`Verified`, `Changes Requested`, or `Pending`);
+- the verifier (the Planner identity);
+- the date.
 
-Ownership enforcement SHOULD initially be advisory.
+No separate Verification record or Verification ID exists.
 
-The recommended advisory ownership mapping is:
+The Implementer MUST NOT mark a Task as `Verified`.
+
+## 13. Section ownership
+
+Section-level ownership is used to minimize merge conflicts.
+
+### 13.1 Planner-owned sections
+
+- Plan status
+- Plan objective
+- Plan scope
+- Plan constraints
+- Task definitions
+- Definition of Done
+- Verification
+- Planner Decision
+
+### 13.2 Implementer-owned sections
+
+- Task implementation
+- Implementation evidence
+- Task implementation lifecycle state
+
+The Implementer MUST NOT authoritatively modify Planner verification.
+
+The Implementer MUST NOT mark a Task `Verified`.
+
+The same person or agent MAY perform different roles at different times, but MUST respect the ownership boundaries of the current operation.
+
+## 14. Merge-conflict minimization
+
+The following rules are normative:
+
+1. Each Plan MUST have its own file.
+2. Each Task MUST have its own file.
+3. Implementing a Task MUST NOT require editing the parent Plan.
+4. Implementers SHOULD modify only the Task they are implementing.
+5. Planners SHOULD modify only the relevant Plan or Task.
+6. Shared mutable status files SHOULD NOT be required.
+7. Historical state MUST NOT be duplicated into event logs.
+8. Changes SHOULD remain as localized as practical.
+9. Git history provides the historical timeline.
+
+## 15. Identifiers
+
+The protocol defines two identifier formats:
 
 ```text
-.plan/plans/**
-
-Planner-owned
-
-.plan/feedback/**
-
-Append-only
-Author-owned
-
-src/**
-tests/**
-
-Implementer-owned
-
-verification outputs
-
-Verifier-owned
+P###          (for example P001)
+P###-T###     (for example P001-T001)
 ```
 
-Repository-specific implementation paths MUST NOT be made mandatory in this specification. Repositories MUST be able to define their own implementation paths.
+The following identifier forms are removed from the protocol:
 
-Optional configuration MAY be added later, for example:
+- Acceptance Criterion IDs
+- Feedback IDs
+- Finding IDs
+- Decision IDs
+- Verification IDs
+- Iteration IDs
+- Event IDs
 
-```yaml
-ownership:
-  planner:
-    - ".plan/plans/**"
+Identifiers MUST NOT change when wording, status, or implementation changes.
 
-  implementer:
-    - "src/**"
-    - "tests/**"
+Create a new ID only for a logically distinct entity; do NOT create a new task ID merely because wording changes.
 
-  verifier:
-    - ".plan/verification/**"
+## 16. Normalized model
+
+The simplified normalized model contains only Plan and Task.
+
+Markdown remains the canonical representation (Section 3.1); the normalized model is a derived, machine-checkable projection used for validation.
+
+### 16.1 Plan
+
+```text
+Plan
+├── id
+├── status
+├── objective
+├── scope
+├── constraints
+└── tasks
 ```
 
-## 20. Normalized data model
+### 16.2 Task
 
-This section defines a normalized logical representation of PaC entities. Markdown remains the canonical representation (Section 3.1); the normalized model is a derived, machine-checkable projection used for validation and deterministic state derivation.
+```text
+Task
+├── id
+├── plan_id
+├── status
+├── owner
+├── objective
+├── depends_on
+├── definition_of_done
+├── implementation
+├── implementation_evidence
+└── verification
+```
 
-### 20.1 Purpose
+Implementation evidence and verification are Task data, not separate entities.
 
-The normalized model:
+### 16.3 Deterministic projection
 
-- provides a single, deterministic representation of the PaC entities that appear across plan records and feedback threads;
-- establishes an unambiguous relationship between canonical Markdown and the normalized form;
-- supports machine validation and deterministic derivation of task state without replacing Markdown as the system of record;
-- documents any information that cannot be represented unambiguously.
-
-### 20.2 Entities
-
-A normalized PaC model comprises the following entities:
-
-| Entity | Description | Key fields |
-|--------|-------------|------------|
-| Plan | A durable implementation planning artifact | `id`, `title`, `status`, `scope`, `planner`, `created`, `pac_version`, `current_iteration`, `objective`, `constraints`, `tasks` |
-| Task | A unit of planned implementation work | `id`, `title`, `status`, `owner`, `description`, `dependencies`, `acceptance`, `findings`, `implementation_evidence`, `verification_outcomes` |
-| Acceptance Criterion | An observable condition a task must satisfy | `id`, `text`, `task` |
-| Finding | A discovered deviation or failure | `id`, `title`, `status`, `severity`, `description`, `references`, `disposition` |
-| Feedback | An append-only thread associated with a subject | `subject_id`, `items` |
-| Feedback Item | A single append-only record within a thread | `id`, `author`, `date`, `kind`, `content` |
-| Planning Decision | An explicit recorded Planner determination | `id`, `context`, `decision`, `rationale`, `affected`, `resulting_changes` |
-| Implementation Evidence | A Git-native reference recording how a task was implemented | `type`, `value`, `tasks`, `acceptance` |
-| Verification Outcome | A Verifier determination for a task | `task`, `result`, `independence_level`, `verifier`, `evidence` |
-| Verification Evidence | A Git-native reference recording how a task was verified | `type`, `value`, `outcome`, `tasks`, `acceptance` |
-
-The details of the relationship and dependency types are defined in Sections 23 and 24.
-
-### 20.3 Deterministic projection
-
-Canonical Markdown MUST map to the normalized model through the projection defined in Section 29.1. The projection:
-
-- MUST produce the same normalized representation for equivalent Markdown documents;
-- MUST NOT be required to reproduce narrative prose, hyperlinks, or other non-projectable content;
-- MUST document any information that cannot be represented unambiguously.
+Canonical Markdown MUST map to the normalized model through the projection defined in Section 20.1.
 
 ```text
 Canonical Markdown
@@ -960,283 +577,108 @@ Normalized PaC Model
 Validation / Derived State
 ```
 
-### 20.4 Optionality
+### 16.4 Optionality
 
 The normalized model is optional tooling. It MUST NOT replace Markdown as the source of truth. A repository MUST remain fully usable with only Markdown and Git.
 
-## 21. Acceptance criterion identifiers
-
-Each acceptance criterion MUST have a stable identifier of the form:
-
-```text
-AC-P###-T###-NN
-```
-
-For example:
-
-```text
-AC-P001-T002-01
-AC-P001-T002-02
-```
-
-The identifier is allocated by the Planner and MAY be allocated sequentially within a task.
-
-The following rules apply:
-
-- Criterion identity MUST remain stable when wording, status, or implementation changes.
-- Each criterion MUST belong to exactly one task.
-- The identifier format MUST be documented and validated.
-- Verification records MUST be able to reference criterion identifiers (Section 17).
-- Acceptance criteria MUST NOT be reused across tasks; moving a criterion between tasks changes its identity and requires a new identifier.
-
-### 21.1 Compatibility path
-
-Plans recorded before acceptance-criterion identifiers were defined SHOULD assign identifiers to existing acceptance criteria by task order during migration. Once assigned, identifiers MUST remain stable.
-
-## 22. Deterministic task-state derivation
-
-Task state MUST be derivable from repository artifacts rather than stored in a central mutable record (Section 3.8).
-
-### 22.1 Inputs
-
-The derivation MAY use the following repository artifacts:
-
-- the canonical plan record, including the task status recorded by the owning role;
-- implementation evidence references (Section 16);
-- verification outcomes and verification evidence (Sections 17 and 26);
-- findings associated with the task (Section 25);
-- recorded planning decisions (Section 12).
-
-The derived state MUST be one of:
-
-```text
-Draft
-Planned
-In Progress
-Implemented
-Verified
-Blocked
-Deferred
-Cancelled
-```
-
-### 22.2 Precedence
-
-Where multiple conditions apply, the derivation MUST apply the following precedence, highest first:
-
-```text
-Cancelled
-Deferred
-Blocked
-Verified
-Implemented
-In Progress
-Planned
-Draft
-```
-
-### 22.3 Requirements
-
-- `Implemented` requires implementation evidence.
-- `Verified` requires independent verification evidence that satisfies the repository's configured verification requirement (Section 26).
-- `Implemented` MUST NOT imply `Verified`.
-- A blocking finding MUST prevent the affected task from being derived as `Verified` or `Implemented` until it is resolved, accepted, or superseded (Section 25).
-- The derivation MUST produce the same derived state for equivalent repositories.
-
-## 23. Dependencies
-
-A task MAY declare relationships to other tasks. Each relationship MUST use one of the following types:
-
-```text
-depends-on
-blocks
-requires
-conflicts-with
-supersedes
-```
-
-### 23.1 Relationship semantics
-
-| Type | Direction | Meaning |
-|------|-----------|---------|
-| `depends-on` | task → target | The task MUST NOT start implementation until the target is implemented. |
-| `blocks` | task → target | The task impedes progress of the target until the task is completed. |
-| `requires` | task → target | The task requires an artifact or outcome produced by the target. |
-| `conflicts-with` | task → target | The task and the target MUST NOT be implemented or active in the same scope at the same time. |
-| `supersedes` | task → target | The task replaces the target; the target is no longer the intended work. |
-
-`requires` is stricter than `depends-on`: it additionally asserts that the target's outcome is available to the task.
-
-### 23.2 Validation
-
-Relationships MUST be validated for:
-
-- missing references — a reference to a task that does not exist;
-- invalid references — a reference that does not resolve to a Task entity or violates the reference format;
-- self-references — a task referencing itself;
-- dependency cycles — a cycle among `depends-on` or `requires` relationships;
-- invalid relationship combinations — combinations that contradict the semantics (for example a task both `depends-on` and `conflicts-with` the same target).
-
-### 23.3 Representation
-
-A task MAY declare typed relationships in a `**Relationships:**` field, one per bullet, using `<type> <target>` form:
-
-```text
-**Relationships:**
-
-- conflicts-with P001-T002
-- requires P001-T003
-```
-
-The `**Depends on:**` field is shorthand for `depends-on` relationships and MUST be treated as `depends-on` when validating.
-
-Valid dependency graphs MUST pass validation. Detection of these conditions is machine-checkable (Section 28).
-
-## 24. Entity relationships
-
-PaC entities MUST be able to reference each other through typed relationships addressed by stable identifiers.
-
-### 24.1 Supported relationships
-
-The normalized model MUST support traceability equivalent to:
-
-```text
-Plan
- └── Task
-      ├── Acceptance Criterion
-      ├── Implementation Evidence
-      ├── Verification Outcome
-      └── Finding
-
-Finding
- └── Feedback
-      └── Planning Decision
-```
-
-### 24.2 Rules
-
-- Relationship targets MUST use stable identifiers (for example `P001-T002`, `AC-P001-T002-01`, `P001-T001-F001`, `P001-D001`).
-- Invalid references MUST be detectable by validation (Section 28).
-- Plan-to-verification traceability MUST be possible: a Plan leads to Tasks, each with Verification Outcomes that reference Acceptance Criteria and Verification Evidence.
-- Finding-to-decision traceability MUST be possible: a Finding leads to Feedback, and a Feedback thread leads to a Planning Decision.
-
-## 25. Finding lifecycle
-
-A finding has a defined lifecycle. The supported states are:
-
-```text
-Open
-Acknowledged
-Resolved
-Accepted
-Invalid
-Superseded
-```
-
-The semantics are:
-
-| State | Meaning |
-|-------|---------|
-| Open | Discovered, not yet dispositioned. |
-| Acknowledged | Recognized by the responsible role. |
-| Resolved | The deviation was corrected. |
-| Accepted | The deviation is tolerated by explicit decision. |
-| Invalid | The finding was rejected as not valid. |
-| Superseded | The finding was replaced by another finding. |
-
-### 25.1 Rules
-
-- Findings MUST remain distinct from tasks. A task represents intended work; a finding represents a discovered deviation or failure.
-- Findings MUST have stable identifiers (Section 3.6).
-- A finding MUST be able to reference the affected tasks and acceptance criteria.
-- When a finding requires implementation work, the resulting task MUST be explicitly created through the planning process rather than implicitly created by the finding.
-- A finding's disposition MUST be traceable to a planning decision (Section 12).
-- A blocking finding MUST affect derived task state as defined in Section 22.
-
-## 26. Verification independence
-
-Verification MUST distinguish self-verification from independent verification.
-
-### 26.1 Independence levels
-
-The protocol supports the following levels:
-
-| Level | Name | Meaning |
-|-------|------|---------|
-| 0 | Self verification | The Implementer verifies their own work. |
-| 1 | Separate verification operation | A distinct verification operation is performed. |
-| 2 | Separate agent/context | Verification is performed in a separate agent session or context. |
-| 3 | Independent actor/model context | Verification is performed by an actor or model independent of the Implementer. |
-| 4 | Human or externally independent verification | A human or external party verifies the work. |
-
-### 26.2 Requirements
-
-- A repository MUST be able to specify the minimum level required for `Verified`.
-- The minimum level MAY be declared in `.plan/README.md` or in the plan record.
-- Verification records MUST identify the independence level used.
-- State derivation MUST respect the configured verification requirement (Section 22).
-
-## 27. Conformance levels
-
-The protocol defines four conformance levels. Higher levels build on lower levels.
-
-### PaC Core
-
-Canonical plans, stable IDs, tasks, and acceptance criteria.
-
-### PaC Agent
-
-Core plus ownership, feedback, decisions, and agent procedures.
-
-### PaC Verified
-
-Agent plus evidence, findings, and independent verification.
-
-### PaC Automated
-
-Verified plus normalized representation, automated validation, relationship validation, and deterministic state derivation.
-
-### 27.1 Rules
-
-- A repository MUST be able to declare its supported conformance level.
-- A tool MUST be able to declare its supported conformance level.
-- Core PaC usage MUST remain possible without automation.
-- The declaration MAY be recorded in `.plan/README.md` or in a plan record.
-
-## 28. Protocol invariants
+## 17. Protocol invariants
 
 The following invariants MUST hold for conforming PaC artifacts. Each invariant has a stable identifier.
 
 ```text
 INV-001 — Plan IDs are unique.
 INV-002 — Task IDs are unique.
-INV-003 — Every Task belongs to a Plan.
-INV-004 — Every Acceptance Criterion belongs to one Task.
-INV-005 — Relationship targets exist.
-INV-006 — Invalid dependency cycles are rejected.
-INV-007 — Verified requires independent verification.
-INV-008 — Implementation evidence cannot alone produce Verified.
-INV-009 — Findings have stable IDs.
-INV-010 — Feedback is append-only.
-INV-011 — Plan changes are traceable to decisions.
-INV-012 — Artifact ownership boundaries are respected.
-INV-013 — Contradictory relationship combinations are rejected.
+INV-003 — Every Task references a Plan that exists.
+INV-004 — Task ID prefix matches its parent Plan.
+INV-005 — Plan status is valid.
+INV-006 — Task status is valid.
+INV-007 — Dependency targets exist.
+INV-008 — Dependency cycles are rejected.
+INV-009 — Only the Planner marks a Task Verified.
+INV-010 — Verified requires a Planner verification record.
+INV-011 — A Verified Task satisfies its Definition of Done.
+INV-012 — A Plan is Completed only when all required Tasks are Verified.
+INV-013 — Records are stored in the defined layout.
 ```
 
-### 28.1 Checkability
+### 17.1 Checkability
 
 - Every invariant MUST be machine-checkable where applicable.
 - Invalid artifacts MUST produce actionable validation failures that identify the invariant and the offending artifact.
 - Validation MUST cover identity, relationships, state, evidence, and ownership.
 - Invariant validation MUST be covered by automated tests.
 
-## 29. Human-readable format
+## 18. Workflow
+
+### 18.1 Create a plan
+
+The Planner creates a Plan record for a defined objective and scope.
+
+### 18.2 Define tasks
+
+The Planner defines Tasks, dependencies, constraints, and Definition of Done.
+
+### 18.3 Implement
+
+The Implementer reads the complete canonical Plan and implements accepted Tasks, recording implementation evidence in each Task.
+
+### 18.4 Verify
+
+The Planner evaluates each implemented Task against its Definition of Done and records the result in the Task.
+
+### 18.5 Evolve
+
+Plans and Tasks evolve over time. Git history provides the historical evolution. Stable IDs are preserved (Section 15).
+
+## 19. Agent interoperability
+
+Agents MUST distinguish:
+
+```text
+Intended work (Task)
+Implementation
+Verification
+```
+
+These concepts are not interchangeable.
+
+Agents MUST determine their current operation and ownership boundary before writing.
+
+Agents MUST:
+
+- preserve stable IDs;
+- read the complete canonical Plan before starting implementation;
+- record implementation evidence when acting as Implementer;
+- record verification results in the Task when acting as Planner.
+
+Agents MUST NOT:
+
+- change the objective, scope, or Definition of Done;
+- implement a Task outside the assigned role;
+- mark a Task as `Verified` when acting as Implementer;
+- modify another role's primary artifact or section;
+- claim verification without evidence.
+
+### 19.1 Discovery
+
+Before operating, an agent SHOULD:
+
+1. read repository instructions such as `AGENTS.md`;
+2. locate `.plan/README.md` if present and read it for layout, ID formats, and active plans;
+3. locate the applicable Plan and Task records;
+4. identify the agent's assigned role and corresponding ownership boundary;
+5. identify the assigned Task;
+6. check Task dependencies;
+7. execute only allowed work within the ownership boundary;
+8. record evidence and stop at the role boundary.
+
+## 20. Human-readable format
 
 Markdown is the canonical default format.
 
 Machine-readable representations MAY be generated for validation or automation but SHOULD NOT replace the human-readable plan artifact.
 
-### 29.1 Markdown-to-schema projection
+### 20.1 Markdown-to-schema projection
 
 The optional schemas in `schemas/` are machine-readable projections of the Markdown records. This section defines how each projection is derived.
 
@@ -1250,138 +692,82 @@ Plan record (`schemas/plan.schema.json`):
 | `**Planner:**` | `planner` |
 | `**Created:**` | `created` |
 | `**PaC version:**` | `pac_version` |
-| `**Current iteration:**` | `current_iteration` (integer) |
 | `## Objective` section content | `objective` |
+| `## Scope` `### Included` items | `included` (array of strings) |
+| `## Scope` `### Excluded` items | `excluded` (array of strings) |
 | `## Constraints` section items | `constraints` (array of strings) |
-| `### P001-T001 — Task title` heading | task `id` (`P001-T001`) and task `title` |
-| Task `**Status:**` | task `status` |
-| Task `**Owner:**` | task `owner` |
-| Task description paragraph | task `description` |
-| Task `**Depends on:**` items | task `dependencies` (array of strings) |
-| Task `**Relationships:**` items | task `relationships` (array of strings in `<type> <target>` form) |
-| Task `#### Acceptance` checkbox list | task `acceptance` (array of objects with `id` derived from the leading `AC-...-NN` marker and `text` from the item text without the `- [ ]` marker) |
-| `### P001-T001-F001 — Finding title` heading under `## Findings` | finding `id` and finding `title` |
-| Finding `**Status:**` | finding `status` (finding lifecycle, Section 25) |
-| Finding `**Severity:**` | finding `severity` |
-| Finding `#### References` items | finding `references` (array of stable IDs) |
-| Finding `#### Resolution` content | finding `resolution` |
-| `### P001-D001 — Decision title` heading under `## Decisions` | decision `id` (`P001-D001`) and decision `title` |
-| Decision `**Context:**` line | decision `context` |
-| Decision `**Decision:**` line | decision `decision` |
-| Decision `**Rationale:**` line | decision `rationale` |
-| Decision `**Affected:**` line | decision `affected` (array of stable IDs) |
-| Decision `**Resulting changes:**` line | decision `resulting_changes` |
-| `### P001-T001` heading under `## Verification` | verification `task` (`P001-T001`) |
-| Verification `**Status:**` | verification `status` |
-| Verification `**Verifier:**` line | verification `verifier` |
-| Verification `**Independence:** Level N` line | verification `independence_level` (integer 0–4) |
-| Verification `#### Evidence` items | verification `evidence` (array of `{type, value}` references) |
-| Verification `#### Acceptance` checkbox list | verification `acceptance` (array of `{id, result}`) |
+| `## Tasks` list items | `tasks` (array of task IDs) |
+| `## Definition of Done` checkbox list | `definition_of_done` (array of `{done, text}`) |
 
-Fields that appear in the Markdown but have no schema property (for example links or narrative prose) are not projected.
-
-Feedback thread (`schemas/feedback.schema.json`):
+Task record (`schemas/task.schema.json`):
 
 | Markdown element | Schema property |
 |------------------|-----------------|
-| `# Feedback — P001-T001` heading | `subject_id` (`P001-T001`) |
-| `## P001-T001-FB001 — Clarification` heading | item `id` (the full `P001-T001-FB001`, derived from the subject ID and the `FB###` number; for finding-scoped threads, for example `P001-T001-F001-FB001`) and item `kind` (text after the em dash) |
-| `**Author:**` line | item `author` |
-| `**Date:**` line | item `date` |
-| Item content paragraph | item `content` |
+| `# P001-T001 — Title` heading | `id` (`P001-T001`) and `title` (text after the em dash) |
+| `**Status:**` | `status` |
+| `**Owner:**` | `owner` |
+| `**Plan:**` | `plan_id` |
+| `## Objective` section content | `objective` |
+| `**Depends on:**` items | `depends_on` (array of task IDs) |
+| `## Definition of Done` checkbox list | `definition_of_done` (array of `{done, text}`) |
+| `## Implementation` section content | `implementation` |
+| `## Implementation Evidence` items | `implementation_evidence` (array of strings) |
+| `## Verification` `**Result:**` | `verification.result` |
+| `## Verification` `**By:**` | `verification.by` |
+| `## Verification` `**Date:**` | `verification.date` |
+| `## Verification` section content | `verification.reason` |
 
-## 30. Agent interoperability
+Fields that appear in the Markdown but have no schema property (for example links or narrative prose) are not projected.
 
-Agents MUST distinguish:
+## 21. Conformance
 
-```text
-Intended work (Task)
-Discovered deviation (Finding)
-Clarification (Feedback)
-Decision
-Implementation
-Verification
-```
-
-These concepts are not interchangeable.
-
-Agents MUST determine their current operation and ownership boundary before writing.
-
-Agents MUST:
-
-- preserve stable IDs;
-- read the complete canonical plan before starting implementation;
-- record canonical decisions in the plan when acting as Planner;
-- record reproducible verification evidence when acting as Verifier;
-- evaluate repository artifacts rather than rely solely on implementation claims when acting as Verifier.
-
-Agents MUST NOT:
-
-- change acceptance criteria;
-- implement a task outside the assigned role;
-- modify feedback authored by another role;
-- claim verification without evidence;
-- modify another role's primary artifact.
-
-### 30.1 Discovery
-
-Before operating, an agent SHOULD:
-
-1. read repository instructions such as `AGENTS.md`;
-2. locate `.plan/README.md` if present and read it for layout, ID formats, and active plans;
-3. locate the applicable plan record and any applicable feedback threads;
-4. identify the agent's assigned role and corresponding ownership boundary;
-5. identify the assigned task;
-6. check task dependencies;
-7. execute only allowed work within the ownership boundary;
-8. record evidence and stop at the role boundary.
-
-## 31. Conformance
-
-Conformance levels are defined in Section 27.
-
-A PaC implementation conforms to v0.2.0 when it:
+A PaC implementation conforms to v0.4.0 when it:
 
 1. supports multiple plan records per repository;
-2. provides stable plan, task, finding, and feedback IDs;
-3. preserves Planner/Implementer/Verifier ownership boundaries;
-4. distinguishes intended work from discovered findings;
-5. distinguishes feedback from decisions;
-6. distinguishes implementation from verification;
-7. provides a human-readable plan representation;
-8. supports append-only, git-managed feedback records;
-9. derives state from plan artifacts without a central mutable registry.
+2. provides stable plan and task IDs;
+3. preserves Planner and Implementer ownership boundaries;
+4. distinguishes implementation from verification;
+5. provides a human-readable plan representation;
+6. requires a Definition of Done for Tasks;
+7. restricts `Verified` to the Planner;
+8. derives state from plan and task artifacts without a central mutable registry;
+9. uses Git history as the historical timeline.
 
-## 32. Migration from v0.1.0
+## 22. Migration from v0.3.x
 
-This section documents how existing PaC v0.1.0 artifacts can be migrated to v0.2.0. Migration SHOULD preserve stable identifiers.
+This section documents how existing PaC v0.3.x artifacts can be migrated to v0.4.0. Migration SHOULD preserve stable identifiers.
 
-### 32.1 Acceptance criteria
+### 22.1 Roles
 
-v0.1.0 acceptance criteria are plain checkbox items without identifiers. During migration, assign identifiers in task order using the form `AC-<plan>-<task>-<nn>` (Section 21). Once assigned, identifiers MUST remain stable.
+The Verifier role is removed. Verification is performed by the Planner. Existing verification records SHOULD be folded into the affected Task's `## Verification` section.
 
-### 32.2 Findings
+### 22.2 Records
 
-v0.1.0 findings with a `**Status:**` of `Open`, `Resolved`, or another value SHOULD be mapped to the lifecycle vocabulary (Section 25). Unrecognized statuses SHOULD map to `Open` until dispositioned.
+Feedback, finding, decision, verification, and iteration records are no longer canonical. Their content MAY be:
 
-### 32.3 Decisions
+- recorded directly in the relevant Plan or Task where it affects the current state; or
+- left in place as historical records; Git history preserves them.
 
-v0.1.0 decision discussions recorded only in feedback threads SHOULD be promoted to `## Decisions` records with `P###-D###` identifiers where they resulted in a plan change (Section 12).
+Validators MAY ignore records that do not conform to the current record templates.
 
-### 32.4 Verification
+### 22.3 Tasks
 
-v0.1.0 verification records SHOULD be extended with `**Independence:**` levels (Section 26) and structured evidence references (Section 17). Verification records without a stated level are treated as Level 1 (separate verification operation).
+v0.3.x plans defined Tasks inline. In v0.4.0, each Task MUST have its own file under `.plan/tasks/`.
 
-### 32.5 Conformance
+### 22.4 Acceptance criteria
 
-A repository MAY declare its conformance level (Section 27). Migration to a higher level than the repository previously supported is a separate decision.
+v0.3.x acceptance criteria become Definition of Done conditions. The `AC-P###-T###-NN` identifiers are removed.
 
-### 32.6 No automatic rewrite
+### 22.5 Dependencies
 
-Migration MUST NOT require an automated rewrite. Existing valid v0.1.0 records remain readable; the identifiers and structure above are additive.
+v0.3.x typed relationships (`blocks`, `requires`, `conflicts-with`, `supersedes`) are removed. `depends-on` remains the only dependency form.
 
-## 33. Fundamental invariant
+### 22.6 No automatic rewrite
 
-> The Planner defines what. The Implementer defines how. The Verifier determines whether.
+Migration MUST NOT require an automated rewrite. Existing valid v0.3.x records remain readable; the structure above is the target model.
+
+## 23. Fundamental invariant
+
+> The Planner defines what and determines whether. The Implementer defines how.
 
 The same human or agent MAY perform multiple roles at different times, but MUST NOT collapse ownership boundaries within a single operation.
