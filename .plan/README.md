@@ -37,7 +37,7 @@ This repository targets the revised PaC v0.2.0 semantics (see `SPEC.md`). It MAY
 
 ## Active plans
 
-None.
+- P002 — Simplify PaC Roles, Records, and Lifecycles.
 
 ## Closed plans
 
