@@ -61,10 +61,11 @@ The task list in a canonical Plan contains **implementation tasks**. Planning an
 3. Record the objective, scope, constraints, tasks, dependencies, and Definition of Done.
 4. Allocate stable IDs (`P###`, `P###-T###`) by scanning existing records.
 5. Preserve stable IDs as Plans and Tasks evolve.
-6. Verify implemented Tasks against their Definition of Done.
-7. Mark Tasks `Verified` only when the Definition of Done is satisfied; otherwise record the reason and mark the Task `Changes Requested`.
-8. Mark Plans `Completed` only when all required Tasks are `Verified`.
-9. Stop before modifying implementation merely to satisfy the plan.
+6. Mark the Plan `Planned` when it is ready for implementation.
+7. Verify implemented Tasks against their Definition of Done.
+8. Mark Tasks `Verified` only when the Definition of Done is satisfied; otherwise record the reason and mark the Task `Changes Requested`.
+9. Mark Plans `Completed` only when all required Tasks are `Verified`.
+10. Stop before modifying implementation merely to satisfy the plan.
 
 ## Implementer Procedure
 
@@ -72,11 +73,12 @@ The task list in a canonical Plan contains **implementation tasks**. Planning an
 2. Read the complete canonical Plan before starting.
 3. Implement only accepted, planner-owned tasks.
 4. Check task dependencies before starting work.
-5. Record implementation evidence (commit SHA, changed files, test command, test result) in the Task.
-6. Mark the Task `Implemented` when the work and evidence are complete.
-7. Do not change the objective or the Definition of Done.
-8. Do not mark a Task as `Verified`.
-9. Stop before modifying Planner verification or the canonical Plan.
+5. Mark the Task `In Progress` when beginning implementation.
+6. Record implementation evidence (commit SHA, changed files, test command, test result) in the Task.
+7. Mark the Task `Implemented` when the work and evidence are complete.
+8. Do not change the objective or the Definition of Done.
+9. Do not mark a Task as `Verified`.
+10. Stop before modifying Planner verification or the canonical Plan.
 
 ## Decision Rules
 

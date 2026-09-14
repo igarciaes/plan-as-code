@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Plan P003 — Enforce Status Transition Ownership for Tasks and Plans.
+
+### Changed
+
+- `SPEC.md` §8 and §9 make status-transition ownership explicit: the Planner owns the Plan status and MUST mark the Plan `Planned` when it is ready for implementation and `Completed` when all required Tasks are `Verified`; the Implementer owns the Task's implementation lifecycle state and MUST mark the Task `In Progress` when beginning implementation and `Implemented` when the implementation and its evidence are complete.
+- `SKILL.md` Planner and Implementer procedures now instruct the corresponding status updates.
+- `examples/` Plan and Task records updated to demonstrate the explicit transitions (`Planned`/`Completed` Plans; `In Progress`/`Implemented` Tasks).
+
+### Notes
+
+- PaC remains v0.4.0; no version bump.
+
 ## [v0.4.0] - 2026-09-14
 
 Plan P002 — Simplify PaC Roles, Records, and Lifecycles.

@@ -305,6 +305,8 @@ Draft → Planned → Completed
               ↘ Cancelled
 ```
 
+The Planner owns the Plan status and MUST advance the Plan through its lifecycle. Only the Planner MAY transition a Plan to `Planned` or `Completed`.
+
 ### 8.1 Draft
 
 The Plan is being prepared.
@@ -315,11 +317,15 @@ Scope, Tasks, dependencies, and Definition of Done may still change.
 
 The Plan is ready for implementation.
 
+The Planner MUST mark the Plan `Planned` when it is ready for implementation.
+
 Required Tasks have been identified and the Planner considers the Plan sufficiently defined.
 
 ### 8.3 Completed
 
 The Plan has been successfully completed.
+
+The Planner MUST mark the Plan `Completed` when all required Tasks are `Verified`.
 
 A Plan MUST NOT be marked `Completed` while any required Task is not `Verified`.
 
@@ -347,6 +353,8 @@ Draft → Planned → In Progress → Implemented → Verified
 
 Tasks MAY additionally transition to `Blocked`, `Deferred`, or `Cancelled` according to the rules defined below.
 
+The Implementer owns the Task's implementation lifecycle state (`In Progress`, `Implemented`) and MUST advance the Task through it. Only the Planner MAY transition a Task to `Verified`.
+
 ### 9.1 Draft
 
 The Task is being defined.
@@ -359,9 +367,13 @@ The Task is ready for implementation.
 
 The Implementer is actively working on the Task.
 
+The Implementer MUST mark the Task `In Progress` when beginning implementation.
+
 ### 9.4 Implemented
 
 The Implementer considers the implementation complete and has provided the required evidence.
+
+The Implementer MUST mark the Task `Implemented` when the implementation and its evidence are complete.
 
 `Implemented` does not mean verified.
 
