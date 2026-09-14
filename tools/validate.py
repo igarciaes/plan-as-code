@@ -222,11 +222,13 @@ def scan(root):
             text = p.read_text(encoding="utf-8")
         except OSError:
             continue
-        if PLAN_HEADING.search(text) and ".plan/plans/" in str(p).replace("\\", "/"):
+        has_plan = PLAN_HEADING.search(text)
+        has_task = TASK_HEADING.search(text)
+        if has_plan and not has_task:
             if is_legacy_plan(text):
                 continue
             plans.append(parse_plan(text, p))
-        elif TASK_HEADING.search(text) and ".plan/tasks/" in str(p).replace("\\", "/"):
+        elif has_task:
             tasks.append(parse_task(text, p))
     return plans, tasks
 
