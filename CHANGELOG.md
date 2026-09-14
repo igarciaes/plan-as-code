@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.4.1] - 2026-09-14
 
 Plan P003 — Enforce Status Transition Ownership for Tasks and Plans.
 
@@ -17,7 +17,7 @@ Plan P003 — Enforce Status Transition Ownership for Tasks and Plans.
 
 ### Notes
 
-- PaC remains v0.4.0; no version bump.
+- Patch release; the PaC protocol remains v0.4.0-compliant with no changes to protocol semantics or invariants.
 
 ## [v0.4.0] - 2026-09-14
 
