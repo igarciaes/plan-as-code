@@ -239,6 +239,141 @@ def validate_models(plans, tasks, config):
     def add(inv, file, message):
         violations.append({"invariant": inv, "file": file, "message": message})
 
+    plan_index = {}
+    for plan in plans:
+        plan_index.setdefault(plan["id"], []).append(plan)
+    task_index = {}
+    for task in tasks:
+        task_index.setdefault(task["id"], []).append(task)
+
+    if "INV-001" in checks:
+        for pid, group in plan_index.items():
+            if len(group) > 1:
+                add(
+                    "INV-001",
+                    group[0]["file"],
+                    f"duplicate Plan ID {pid!r} used {len(group)} times",
+                )
+
+    if "INV-002" in checks:
+        for tid, group in task_index.items():
+            if len(group) > 1:
+                add(
+                    "INV-002",
+                    group[0]["file"],
+                    f"duplicate Task ID {tid!r} used {len(group)} times",
+                )
+
+    if "INV-003" in checks:
+        for task in tasks:
+            plan_id = task["fields"].get("plan", "")
+            if not plan_id:
+                add(
+                    "INV-003",
+                    task["file"],
+                    f"Task {task['id']} does not reference a parent Plan",
+                )
+            elif plan_id not in plan_index:
+                add(
+                    "INV-003",
+                    task["file"],
+                    f"Task {task['id']} references missing Plan {plan_id!r}",
+                )
+        for plan in plans:
+            for tid in plan["tasks"]:
+                if tid not in task_index:
+                    add(
+                        "INV-003",
+                        plan["file"],
+                        f"Plan {plan['id']} references missing Task {tid!r}",
+                    )
+
+    if "INV-004" in checks:
+        for task in tasks:
+            m = re.fullmatch(r"(P\d+)-T\d+", task["id"])
+            plan_id = task["fields"].get("plan", "")
+            if m and plan_id and m.group(1) != plan_id:
+                add(
+                    "INV-004",
+                    task["file"],
+                    f"Task {task['id']} belongs to Plan {m.group(1)}, not {plan_id!r}",
+                )
+
+    if "INV-007" in checks:
+        for task in tasks:
+            for dep in task["depends_on"]:
+                if dep not in task_index:
+                    add(
+                        "INV-007",
+                        task["file"],
+                        f"Task {task['id']} depends on missing Task {dep!r}",
+                    )
+
+    if "INV-008" in checks:
+        adj = {}
+        for task in tasks:
+            adj.setdefault(task["id"], [])
+            for dep in task["depends_on"]:
+                if dep in task_index:
+                    adj.setdefault(dep, [])
+                    adj[task["id"]].append(dep)
+        gray = set()
+        black = set()
+        cycles = []
+
+        def dfs(node, path):
+            gray.add(node)
+            path.append(node)
+            for nb in adj.get(node, []):
+                if nb in gray:
+                    idx = path.index(nb)
+                    cycles.append(path[idx:] + [nb])
+                elif nb not in black:
+                    dfs(nb, path)
+            gray.discard(node)
+            black.add(node)
+            path.pop()
+
+        for tid in list(adj):
+            if tid not in gray and tid not in black:
+                dfs(tid, [])
+        for cycle in cycles:
+            add("INV-008", tasks[0]["file"] if tasks else "<none>", f"dependency cycle detected: {' -> '.join(cycle)}")
+
+    if "INV-012" in checks:
+        for plan in plans:
+            if plan["fields"].get("status") != "Completed":
+                continue
+            for tid, group in task_index.items():
+                task = group[0]
+                if task["fields"].get("plan", "") != plan["id"]:
+                    continue
+                if task["fields"].get("status") not in ("Verified", "Cancelled"):
+                    add(
+                        "INV-012",
+                        plan["file"],
+                        f"Plan {plan['id']} is Completed but required Task {tid} is "
+                        f"{task['fields'].get('status', '')!r} (not Verified)",
+                    )
+
+    if "INV-013" in checks:
+        for plan in plans:
+            p = Path(plan["file"])
+            if p.parent.name != "plans" or ".plan" not in p.parts or p.name != plan["id"] + ".md":
+                add(
+                    "INV-013",
+                    plan["file"],
+                    f"Plan record {plan['id']} is not stored at .plan/plans/{plan['id']}.md",
+                )
+        for task in tasks:
+            p = Path(task["file"])
+            if p.parent.name != "tasks" or ".plan" not in p.parts or p.name != task["id"] + ".md":
+                add(
+                    "INV-013",
+                    task["file"],
+                    f"Task record {task['id']} is not stored at .plan/tasks/{task['id']}.md",
+                )
+
     if "INV-005" in checks:
         for plan in plans:
             status = plan["fields"].get("status", "")

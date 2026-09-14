@@ -3,12 +3,11 @@
   "$id": "https://plan-as-code.dev/schemas/plan.schema.json",
   "title": "Plan as Code Plan Record",
   "type": "object",
-  "description": "Optional machine-readable projection of a PaC plan, derived per SPEC Section 29.1. Markdown remains the canonical human-readable format. Additional properties are permitted at the record level so repositories MAY extend records.",
+  "description": "Optional machine-readable projection of a PaC Plan, derived per SPEC Section 20.1. Markdown remains the canonical human-readable format. Additional properties are permitted at the record level so repositories MAY extend records.",
   "required": [
     "id",
     "title",
     "status",
-    "scope",
     "tasks"
   ],
   "properties": {
@@ -21,7 +20,12 @@
     },
     "status": {
       "type": "string",
-      "description": "Plan status. Recommended values: Draft, Active, Closed."
+      "enum": [
+        "Draft",
+        "Planned",
+        "Completed",
+        "Cancelled"
+      ]
     },
     "scope": {
       "type": "string"
@@ -37,12 +41,20 @@
       "type": "string",
       "description": "The PaC protocol version the record was written against."
     },
-    "current_iteration": {
-      "type": "integer",
-      "minimum": 1
-    },
     "objective": {
       "type": "string"
+    },
+    "included": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "constraints": {
       "type": "array",
@@ -50,247 +62,28 @@
         "type": "string"
       }
     },
-    "conformance": {
-      "type": "object",
-      "description": "Optional declaration of the repository or plan conformance level (SPEC Section 27).",
-      "properties": {
-        "level": {
-          "type": "string",
-          "enum": [
-            "Core",
-            "Agent",
-            "Verified",
-            "Automated"
-          ]
-        }
-      }
-    },
     "tasks": {
       "type": "array",
+      "description": "References to Task records under `.plan/tasks/`.",
       "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "title",
-          "status"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^P[0-9]+-T[0-9]+$"
-          },
-          "title": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "Draft",
-              "Planned",
-              "In Progress",
-              "Implemented",
-              "Verified",
-              "Blocked",
-              "Deferred",
-              "Cancelled"
-            ]
-          },
-          "owner": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "dependencies": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^P[0-9]+-T[0-9]+$"
-            }
-          },
-          "relationships": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^(depends-on|blocks|requires|conflicts-with|supersedes) P[0-9]+-T[0-9]+$"
-            }
-          },
-          "acceptance": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": [
-                "id",
-                "text"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "pattern": "^AC-P[0-9]+-T[0-9]+-[0-9]+$"
-                },
-                "text": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
+        "type": "string",
+        "pattern": "^P[0-9]+-T[0-9]+$"
       }
     },
-    "findings": {
+    "definition_of_done": {
       "type": "array",
-      "description": "Findings recorded in the `## Findings` section (SPEC Section 25).",
+      "description": "Plan-level conditions for marking the Plan `Completed` (SPEC Section 8.3).",
       "items": {
         "type": "object",
         "required": [
-          "id",
-          "title",
-          "status"
+          "text"
         ],
         "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^P[0-9]+-T[0-9]+-F[0-9]+$"
+          "done": {
+            "type": "boolean"
           },
-          "title": {
+          "text": {
             "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "Open",
-              "Acknowledged",
-              "Resolved",
-              "Accepted",
-              "Invalid",
-              "Superseded"
-            ]
-          },
-          "severity": {
-            "type": "string"
-          },
-          "references": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^P[0-9]+-T[0-9]+$"
-            }
-          },
-          "resolution": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "decisions": {
-      "type": "array",
-      "description": "Planning decisions recorded in the `## Decisions` section (SPEC Section 12).",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "decision"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^P[0-9]+-D[0-9]+$"
-          },
-          "title": {
-            "type": "string"
-          },
-          "context": {
-            "type": "string"
-          },
-          "decision": {
-            "type": "string"
-          },
-          "rationale": {
-            "type": "string"
-          },
-          "affected": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^P[0-9]+(-T[0-9]+)?$"
-            }
-          },
-          "resulting_changes": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "verifications": {
-      "type": "array",
-      "description": "Verification outcomes recorded in the `## Verification` section (SPEC Sections 17 and 26).",
-      "items": {
-        "type": "object",
-        "required": [
-          "task",
-          "status"
-        ],
-        "properties": {
-          "task": {
-            "type": "string",
-            "pattern": "^P[0-9]+-T[0-9]+$"
-          },
-          "status": {
-            "type": "string"
-          },
-          "verifier": {
-            "type": "string"
-          },
-          "independence_level": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 4
-          },
-          "evidence": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": [
-                "type",
-                "value"
-              ],
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "commit",
-                    "pull-request",
-                    "file",
-                    "test",
-                    "command",
-                    "artifact",
-                    "test-result",
-                    "review",
-                    "report",
-                    "acceptance-evaluation"
-                  ]
-                },
-                "value": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "acceptance": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "pattern": "^AC-P[0-9]+-T[0-9]+-[0-9]+$"
-                },
-                "result": {
-                  "type": "boolean"
-                }
-              }
-            }
           }
         }
       }

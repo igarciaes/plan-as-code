@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plan-as-code.dev/schemas/task.schema.json",
+  "title": "Plan as Code Task Record",
+  "type": "object",
+  "description": "Optional machine-readable projection of a PaC Task, derived per SPEC Section 20.1. Markdown remains the canonical human-readable format. Additional properties are permitted at the record level so repositories MAY extend records.",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "owner",
+    "plan_id",
+    "definition_of_done"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^P[0-9]+-T[0-9]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Planned",
+        "In Progress",
+        "Implemented",
+        "Verified",
+        "Changes Requested",
+        "Blocked",
+        "Deferred",
+        "Cancelled"
+      ]
+    },
+    "owner": {
+      "type": "string",
+      "description": "The role that implements the Task. Recommended value: Implementer."
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^P[0-9]+$"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^P[0-9]+-T[0-9]+$"
+      }
+    },
+    "definition_of_done": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "done": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "implementation": {
+      "type": "string"
+    },
+    "implementation_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": [
+            "Pending",
+            "Verified",
+            "Changes Requested"
+          ]
+        },
+        "by": {
+          "type": "string",
+          "description": "The Planner identity that verified the Task."
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Required when the result is Changes Requested."
+        }
+      }
+    }
+  }
+}
