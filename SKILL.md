@@ -4,7 +4,7 @@ description: Use to perform Plan as Code (PaC) operations — plan, implement, v
 license: MIT
 metadata:
   author: igarciaes
-  version: 0.3.2
+  version: 0.3.3
 ---
 
 # Plan as Code Agent Skill
