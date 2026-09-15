@@ -2,7 +2,7 @@
 
 ## Version
 
-**PaC v0.4.2**
+**PaC v0.5.0**
 
 ## 1. Purpose
 
@@ -48,7 +48,7 @@ Git history is the historical timeline. The protocol MUST NOT require event reco
 
 The Planner owns planning intent and verification. The Implementer owns implementation.
 
-No role MUST modify another role's primary artifact or section.
+A role MUST NOT modify another role's primary artifact or section.
 
 ### 3.4 Distinct operations
 
@@ -127,27 +127,30 @@ The default layout is:
 ```text
 .plan/
 ├── README.md
-├── plans/
-│   ├── P002.md
-│   └── P003.md
-└── tasks/
-    ├── P002-T001.md
-    ├── P002-T002.md
-    └── P003-T001.md
+├── P002/
+│   ├── plan.md
+│   └── tasks/
+│       ├── P002-T001.md
+│       └── P002-T002.md
+└── P003/
+    ├── plan.md
+    └── tasks/
+        └── P003-T001.md
 ```
 
-Plans and Tasks MUST be independently addressable files:
+Each Plan has its own directory under `.plan/` named after its Plan ID. Plans and Tasks MUST be independently addressable files:
 
-- each Plan MUST have its own file under `plans/`;
-- each Task MUST have its own file under `tasks/`;
+- each Plan MUST have its own directory under `.plan/` named after its Plan ID;
+- the Plan record MUST be stored as `plan.md` in that directory;
+- each Task MUST have its own file under that Plan's `tasks/` directory;
 - a Task MUST NOT be defined inline in its parent Plan;
 - a Task MUST NOT require modification of its parent Plan during implementation.
 
 Repositories MAY define another layout in `.plan/README.md`.
 
-A single global plan file MUST NOT be used to represent multiple unrelated plans.
+A single global plan directory MUST NOT be used to represent multiple unrelated plans.
 
-Before allocating a new plan ID, an agent SHOULD scan the existing plan records and take the next sequential unused ID (for example, the next `P###` number). The allocation convention MAY be documented in `.plan/README.md`.
+Before allocating a new plan ID, an agent SHOULD scan the existing plan directories and take the next sequential unused ID (for example, the next `P###` number). The allocation convention MAY be documented in `.plan/README.md`.
 
 ### 5.1 Plan README
 
@@ -167,7 +170,7 @@ It MUST remain human-readable and SHOULD be readable by agents for discovery.
 
 ## 6. Plan record
 
-A Plan MUST be a single Markdown file under `.plan/plans/`.
+A Plan MUST be a single Markdown file (`plan.md`) in a directory under `.plan/` named after its Plan ID.
 
 A Plan MUST have:
 
@@ -181,7 +184,7 @@ A Plan MUST have:
 - constraints;
 - a task list.
 
-A Plan MAY have included and excluded scope items and a Plan Definition of Done.
+A Plan MAY have included and excluded scope items.
 
 A Plan ID uses the recommended format `P###` (for example `P001`).
 
@@ -194,7 +197,7 @@ The canonical Plan template is:
 **Scope:** `path/`
 **Planner:** planner-agent
 **Created:** YYYY-MM-DD
-**PaC version:** v0.4.0
+**PaC version:** v0.5.0
 
 ## Objective
 
@@ -218,13 +221,6 @@ Describe the intended outcome.
 
 - P001-T001
 - P001-T002
-
-## Definition of Done
-
-The Plan is ready to be marked `Completed` when:
-
-- [ ] Condition one.
-- [ ] Condition two.
 ````
 
 The template MUST remain intentionally simple.
@@ -233,7 +229,7 @@ Do NOT add implementation details unless they are required constraints.
 
 ## 7. Task record
 
-A Task MUST be a single Markdown file under `.plan/tasks/`.
+A Task MUST be a single Markdown file under its parent Plan's `tasks/` directory.
 
 A Task MUST have:
 
@@ -259,7 +255,7 @@ The canonical Task template is:
 ````markdown
 # P001-T001 — Title
 
-**Status:** Planned
+**Status:** Draft
 **Owner:** Implementer
 **Plan:** P001
 
@@ -302,10 +298,13 @@ The Plan lifecycle is:
 
 ```text
 Draft → Planned → Completed
-              ↘ Cancelled
+   ↘       ↘        ↘
+         Cancelled (reachable from any state)
 ```
 
 The Planner owns the Plan status and MUST advance the Plan through its lifecycle. Only the Planner MAY transition a Plan to `Planned` or `Completed`.
+
+A newly created Plan MUST start in `Draft`. Creating a Plan record does not by itself mark it `Planned`; the Planner MUST transition the Plan to `Planned` in a separate, explicit step when it is ready for implementation.
 
 ### 8.1 Draft
 
@@ -313,13 +312,19 @@ The Plan is being prepared.
 
 Scope, Tasks, dependencies, and Definition of Done may still change.
 
+A newly created Plan MUST be in `Draft`.
+
 ### 8.2 Planned
 
 The Plan is ready for implementation.
 
 The Planner MUST mark the Plan `Planned` when it is ready for implementation.
 
+The `Draft → Planned` transition is a distinct Planner action performed only when the Plan is ready for implementation.
+
 Required Tasks have been identified and the Planner considers the Plan sufficiently defined.
+
+A Plan in `Draft` is not ready for implementation. The Implementer MUST NOT begin implementation of a Task whose parent Plan is not `Planned`.
 
 ### 8.3 Completed
 
@@ -336,6 +341,21 @@ For the purpose of this rule, a required Task is any Task belonging to the Plan 
 The Plan will not be implemented.
 
 `Cancelled` is a terminal state.
+
+Cancelling a Plan requires cancelling its Tasks: when a Plan is `Cancelled`, its Tasks MUST be transitioned to `Cancelled`. A Task in `Cancelled` is the only Task state valid under a `Cancelled` Plan.
+
+### 8.5 Plan transitions
+
+Plan status transitions and their owners are:
+
+| From | To | Owner | Trigger |
+|------|----|-------|---------|
+| (creation) | `Draft` | Planner | The Plan record is created |
+| `Draft` | `Planned` | Planner | The Plan is ready for implementation |
+| `Planned` | `Completed` | Planner | All required Tasks are `Verified` |
+| any | `Cancelled` | Planner | The Plan will not be implemented |
+
+The Planner owns every Plan status transition. A newly created Plan starts in `Draft` and remains `Draft` until the Planner explicitly transitions it to `Planned`.
 
 ## 9. Task lifecycle
 
@@ -355,19 +375,29 @@ Tasks MAY additionally transition to `Blocked`, `Deferred`, or `Cancelled` accor
 
 The Implementer owns the Task's implementation lifecycle state (`In Progress`, `Implemented`) and MUST advance the Task through it. Only the Planner MAY transition a Task to `Verified`.
 
+A newly created Task MUST start in `Draft`. Tasks are defined while their parent Plan is in `Draft`; when the Planner marks the Plan `Planned`, the Planner MUST also transition the Plan's Tasks from `Draft` to `Planned` so they are ready for implementation.
+
 ### 9.1 Draft
 
 The Task is being defined.
 
+A newly created Task MUST be in `Draft`.
+
 ### 9.2 Planned
 
 The Task is ready for implementation.
+
+The Planner transitions the Task from `Draft` to `Planned` when the parent Plan is ready for implementation.
+
+The Planner MUST NOT transition a Task to `Planned` while its parent Plan is `Draft`.
 
 ### 9.3 In Progress
 
 The Implementer is actively working on the Task.
 
 The Implementer MUST mark the Task `In Progress` when beginning implementation.
+
+The Implementer MUST NOT mark a Task `In Progress` (begin implementation) while its parent Plan is not `Planned`.
 
 ### 9.4 Implemented
 
@@ -406,6 +436,27 @@ The Task is intentionally postponed.
 The Task will not be implemented.
 
 `Cancelled` is a terminal state.
+
+### 9.10 Task transitions
+
+Task status transitions and their owners are:
+
+| From | To | Owner | Trigger |
+|------|----|-------|---------|
+| (creation) | `Draft` | Planner | The Task record is created |
+| `Draft` | `Planned` | Planner | The parent Plan is marked `Planned` |
+| `Planned` | `In Progress` | Implementer | Implementation begins |
+| `In Progress` | `Implemented` | Implementer | Implementation and evidence are complete |
+| `Implemented` | `Verified` | Planner | Definition of Done is satisfied |
+| `Implemented` | `Changes Requested` | Planner | Definition of Done is not satisfied |
+| `Changes Requested` | `In Progress` | Implementer | Implementation resumes |
+| `Planned` \| `In Progress` \| `Implemented` | `Blocked` | Implementer | Work cannot proceed |
+| `Planned` \| `In Progress` \| `Implemented` | `Deferred` | Implementer | Work is intentionally postponed |
+| `Blocked` | `In Progress` | Implementer | The blocker is resolved |
+| `Deferred` | `Planned` | Implementer | Work resumes |
+| any | `Cancelled` | Planner | The Task will not be implemented |
+
+A newly created Task starts in `Draft` and remains `Draft` until the Planner transitions it to `Planned` together with its parent Plan.
 
 ## 10. Definition of Done
 
@@ -490,7 +541,6 @@ Section-level ownership is used to minimize merge conflicts.
 - Task definitions
 - Definition of Done
 - Verification
-- Planner Decision
 
 ### 13.2 Implementer-owned sections
 
@@ -611,7 +661,10 @@ INV-010 — Verified requires a Planner verification record; Changes Requested r
 INV-011 — A Verified Task satisfies its Definition of Done.
 INV-012 — A Plan is Completed only when all required Tasks are Verified.
 INV-013 — Records are stored in the defined layout.
+INV-014 — A Task is not implemented before its parent Plan is Planned.
 ```
+
+**INV-014:** A Task MUST NOT be in an implementation or verification state — `Planned`, `In Progress`, `Implemented`, `Changes Requested`, `Blocked`, `Deferred`, or `Verified` — while its parent Plan is `Draft`. A Task in any of those states requires its parent Plan to be `Planned` or `Completed`. When a Plan is `Cancelled`, its Tasks MUST be `Cancelled` (see §8.4).
 
 ### 17.1 Checkability
 
@@ -622,23 +675,35 @@ INV-013 — Records are stored in the defined layout.
 
 ## 18. Workflow
 
-### 18.1 Create a plan
+PaC defines five operations that execute in sequence: **Draft**, **Approve**, **Implement**, **Verify**, and **Complete**. A Plan or Task is advanced by exactly one operation at a time. An agent MUST perform only the single requested operation in a turn and MUST NOT chain or auto-continue into a subsequent operation; each following operation is started only by a separate request or approval.
 
-The Planner creates a Plan record for a defined objective and scope.
+```text
+Draft → Approve → Implement → Verify → Complete
+```
 
-### 18.2 Define tasks
+`Cancel` is a separate Planner action that MAY be taken at any point instead of continuing the sequence.
 
-The Planner defines Tasks, dependencies, constraints, and Definition of Done.
+### 18.1 Draft a plan
 
-### 18.3 Implement
+The Planner creates the Plan record for a defined objective and scope and defines its Tasks, dependencies, constraints, and Definition of Done. Newly created Plans and Tasks start in `Draft`. This operation ends with `Draft` records only; it MUST NOT transition the Plan to `Planned` and MUST NOT implement any Task.
 
-The Implementer reads the complete canonical Plan and implements accepted Tasks, recording implementation evidence in each Task.
+### 18.2 Approve a plan
 
-### 18.4 Verify
+The Planner marks the Plan `Planned` and transitions its Tasks from `Draft` to `Planned` when the Plan is ready for implementation. This is a separate, explicit step from drafting the Plan and Tasks (Sections 8.5 and 9.10). This operation ends with Plan and Task statuses `Planned`; it MUST NOT implement, verify, or complete.
 
-The Planner evaluates each implemented Task against its Definition of Done and records the result in the Task.
+### 18.3 Implement a plan
 
-### 18.5 Evolve
+The Implementer reads the complete canonical Plan and implements the Plan's Tasks, recording implementation evidence in each Task. The Implementer MUST NOT implement Tasks from a Plan that is not `Planned`. This operation ends with Tasks `Implemented`; it MUST NOT verify Tasks or change the Plan status.
+
+### 18.4 Verify a plan
+
+The Planner evaluates each implemented Task against its Definition of Done and records the result in the Task. This operation ends with Tasks `Verified` (or `Changes Requested`); it MUST NOT implement Tasks or complete the Plan.
+
+### 18.5 Complete a plan
+
+The Planner marks the Plan `Completed` once all required Tasks are `Verified`. This operation ends with the Plan `Completed`; it MUST NOT implement or verify Tasks.
+
+### 18.6 Evolve
 
 Plans and Tasks evolve over time. Git history provides the historical evolution. Stable IDs are preserved (Section 15).
 
@@ -667,6 +732,8 @@ Agents MUST NOT:
 
 - change the objective, scope, or Definition of Done;
 - implement a Task outside the assigned role;
+- implement a Task whose parent Plan is not `Planned`;
+- perform more than one operation in a single turn;
 - mark a Task as `Verified` when acting as Implementer;
 - modify another role's primary artifact or section;
 - claim verification without evidence.
@@ -709,7 +776,6 @@ Plan record (`schemas/plan.schema.json`):
 | `## Scope` `### Excluded` items | `excluded` (array of strings) |
 | `## Constraints` section items | `constraints` (array of strings) |
 | `## Tasks` list items | `tasks` (array of task IDs) |
-| `## Definition of Done` checkbox list | `definition_of_done` (array of `{done, text}`) |
 
 Task record (`schemas/task.schema.json`):
 
@@ -733,7 +799,7 @@ Fields that appear in the Markdown but have no schema property (for example link
 
 ## 21. Conformance
 
-A PaC implementation conforms to v0.4.0 when it:
+A PaC implementation conforms to v0.5.0 when it:
 
 1. supports multiple plan records per repository;
 2. provides stable plan and task IDs;
@@ -743,11 +809,13 @@ A PaC implementation conforms to v0.4.0 when it:
 6. requires a Definition of Done for Tasks;
 7. restricts `Verified` to the Planner;
 8. derives state from plan and task artifacts without a central mutable registry;
-9. uses Git history as the historical timeline.
+9. uses Git history as the historical timeline;
+10. starts newly created Plans and Tasks in `Draft` and transitions them to `Planned` as a separate, explicit Planner step;
+11. executes one operation (Draft, Approve, Implement, Verify, Complete) at a time and does not implement Tasks before the Plan is `Planned`.
 
 ## 22. Migration from v0.3.x
 
-This section documents how existing PaC v0.3.x artifacts can be migrated to v0.4.0. Migration SHOULD preserve stable identifiers.
+This section documents how existing PaC v0.3.x artifacts can be migrated to v0.5.0. Migration SHOULD preserve stable identifiers.
 
 ### 22.1 Roles
 
@@ -764,7 +832,7 @@ Validators MAY ignore records that do not conform to the current record template
 
 ### 22.3 Tasks
 
-v0.3.x plans defined Tasks inline. In v0.4.0, each Task MUST have its own file under `.plan/tasks/`.
+v0.3.x plans defined Tasks inline. In v0.4.0 and later, each Task MUST have its own file under its parent Plan's `tasks/` directory.
 
 ### 22.4 Acceptance criteria
 

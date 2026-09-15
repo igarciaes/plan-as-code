@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """PaC protocol invariant validator.
 
-Dependency-free validator for the Plan as Code v0.4.0 protocol invariants
+Dependency-free validator for the Plan as Code v0.5.0 protocol invariants
 defined in SPEC Section 17. It builds the normalized model (SPEC Section 16)
-from Plan records under `.plan/plans/` and Task records under `.plan/tasks/`
-of a repository root and reports violations.
+from Plan records under `.plan/<id>/plan.md` and Task records under
+`.plan/<id>/tasks/` of a repository root and reports violations.
 
 Records that do not conform to the current Plan/Task templates are treated as
 legacy v0.3.x records and are ignored (SPEC Section 22).
@@ -66,13 +66,14 @@ ALL_INVARIANTS = [
     "INV-011",
     "INV-012",
     "INV-013",
+    "INV-014",
 ]
 
 DEFAULT_CHECKS = ALL_INVARIANTS
 
 
 def is_legacy_plan(text):
-    """Return True when a file under plans/ is a legacy v0.3.x record."""
+    """Return True when a file under .plan/ is a legacy v0.3.x record."""
     return bool(
         INLINE_TASK_HEADING.search(text)
         or LEGACY_SECTIONS.search(text)
@@ -81,7 +82,7 @@ def is_legacy_plan(text):
 
 
 def parse_plan(text, path):
-    """Parse a v0.4.0 Plan record into the normalized model."""
+    """Parse a v0.5.0 Plan record into the normalized model."""
     plan = {
         "file": str(path),
         "id": None,
@@ -92,7 +93,6 @@ def parse_plan(text, path):
         "included": [],
         "excluded": [],
         "tasks": [],
-        "definition_of_done": [],
     }
     section = None
     sub = None
@@ -118,13 +118,6 @@ def parse_plan(text, path):
         if m:
             plan["fields"][m.group(1).strip().lower()] = m.group(2).strip()
             continue
-        m = CHECKBOX.match(line)
-        if m:
-            if section == "definition of done":
-                plan["definition_of_done"].append(
-                    {"done": m.group(1) in "xX", "text": m.group(2)}
-                )
-            continue
         m = BULLET.match(line)
         if m:
             content = m.group(1)
@@ -143,7 +136,7 @@ def parse_plan(text, path):
 
 
 def parse_task(text, path):
-    """Parse a v0.4.0 Task record into the normalized model."""
+    """Parse a v0.5.0 Task record into the normalized model."""
     task = {
         "file": str(path),
         "id": None,
@@ -361,19 +354,27 @@ def validate_models(plans, tasks, config):
     if "INV-013" in checks:
         for plan in plans:
             p = Path(plan["file"])
-            if p.parent.name != "plans" or ".plan" not in p.parts or p.name != plan["id"] + ".md":
+            if ".plan" not in p.parts or p.name != "plan.md" or p.parent.name != plan["id"]:
                 add(
                     "INV-013",
                     plan["file"],
-                    f"Plan record {plan['id']} is not stored at .plan/plans/{plan['id']}.md",
+                    f"Plan record {plan['id']} is not stored at .plan/{plan['id']}/plan.md",
                 )
         for task in tasks:
             p = Path(task["file"])
-            if p.parent.name != "tasks" or ".plan" not in p.parts or p.name != task["id"] + ".md":
+            m = re.fullmatch(r"(P\d+)-T\d+", task["id"])
+            plan_dir = m.group(1) if m else "<plan>"
+            if (
+                ".plan" not in p.parts
+                or p.name != task["id"] + ".md"
+                or p.parent.name != "tasks"
+                or p.parent.parent.name != plan_dir
+            ):
                 add(
                     "INV-013",
                     task["file"],
-                    f"Task record {task['id']} is not stored at .plan/tasks/{task['id']}.md",
+                    f"Task record {task['id']} is not stored at "
+                    f".plan/{plan_dir}/tasks/{task['id']}.md",
                 )
 
     if "INV-005" in checks:
@@ -458,6 +459,12 @@ def validate_models(plans, tasks, config):
                     task["file"],
                     f"Task {task['id']} is Verified but has no Planner verification record",
                 )
+            if status == "Verified" and not ver["date"]:
+                add(
+                    "INV-010",
+                    task["file"],
+                    f"Task {task['id']} is Verified but its verification section has no date",
+                )
             if ver["result"] == "Verified" and status != "Verified":
                 add(
                     "INV-010",
@@ -479,12 +486,46 @@ def validate_models(plans, tasks, config):
                         task["file"],
                         f"Task {task['id']} is Changes Requested but no reason is recorded",
                     )
+                if not ver["date"]:
+                    add(
+                        "INV-010",
+                        task["file"],
+                        f"Task {task['id']} is Changes Requested but its verification section has no date",
+                    )
             if ver["result"] == "Changes Requested" and status != "Changes Requested":
                 add(
                     "INV-010",
                     task["file"],
                     f"Task {task['id']} has verification result Changes Requested but status "
                     f"is {status!r}",
+                )
+
+    if "INV-014" in checks:
+        requires_planned = {
+            "Planned",
+            "In Progress",
+            "Implemented",
+            "Changes Requested",
+            "Blocked",
+            "Deferred",
+            "Verified",
+        }
+        allowed_plan_states = {"Planned", "Completed"}
+        for task in tasks:
+            status = task["fields"].get("status", "")
+            if status not in requires_planned:
+                continue
+            plan_id = task["fields"].get("plan", "")
+            plan_group = plan_index.get(plan_id, [])
+            if not plan_group:
+                continue
+            plan_status = plan_group[0]["fields"].get("status", "")
+            if plan_status not in allowed_plan_states:
+                add(
+                    "INV-014",
+                    task["file"],
+                    f"Task {task['id']} is {status!r} but its parent Plan {plan_id!r} "
+                    f"is {plan_status!r}; implementation requires the Plan to be Planned",
                 )
 
     return violations

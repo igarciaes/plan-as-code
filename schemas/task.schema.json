@@ -10,6 +10,7 @@
     "status",
     "owner",
     "plan_id",
+    "objective",
     "definition_of_done"
   ],
   "properties": {

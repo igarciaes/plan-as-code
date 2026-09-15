@@ -1,4 +1,4 @@
-"""Tests that the optional schemas are valid JSON and represent the v0.4.0 model.
+"""Tests that the optional schemas are valid JSON and represent the v0.5.0 model.
 
 Runs with:
 
@@ -28,9 +28,23 @@ class SchemaTestCase(unittest.TestCase):
     def test_plan_schema_two_record_model(self):
         plan = self.load("plan.schema.json")
         props = plan["properties"]
-        self.assertEqual(set(plan["required"]), {"id", "title", "status", "tasks"})
-        for key in ("objective", "constraints", "tasks", "definition_of_done"):
+        self.assertEqual(
+            set(plan["required"]),
+            {
+                "id",
+                "title",
+                "status",
+                "scope",
+                "planner",
+                "created",
+                "objective",
+                "constraints",
+                "tasks",
+            },
+        )
+        for key in ("objective", "constraints", "tasks"):
             self.assertIn(key, props)
+        self.assertNotIn("definition_of_done", props)
 
     def test_plan_schema_status_vocabulary(self):
         plan = self.load("plan.schema.json")
@@ -52,6 +66,7 @@ class SchemaTestCase(unittest.TestCase):
         self.assertIn("done", dod["properties"])
         self.assertIn("plan_id", props)
         self.assertIn("verification", props)
+        self.assertIn("objective", task["required"])
         result = props["verification"]["properties"]["result"]
         self.assertEqual(
             set(result["enum"]),

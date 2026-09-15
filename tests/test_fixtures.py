@@ -17,6 +17,7 @@ CONFORMANCE = Path(__file__).resolve().parent.parent / "conformance"
 
 EXPECTED_INVALID = {
     "dependency-cycle": "INV-008",
+    "draft-plan-implementation": "INV-014",
     "duplicate-plan-id": "INV-001",
     "duplicate-task-id": "INV-002",
     "incomplete-dod": "INV-011",

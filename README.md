@@ -28,25 +28,25 @@ PaC defines exactly two roles and two canonical records:
 
 - **Planner** — owns planning intent and verification.
 - **Implementer** — owns repository implementation artifacts and implements tasks.
-- **Plan** — a single Markdown file under `.plan/plans/`.
-- **Task** — a single Markdown file under `.plan/tasks/`, one file per Task.
+- **Plan** — a single Markdown file (`plan.md`) under `.plan/<PlanID>/`, one directory per Plan.
+- **Task** — a single Markdown file under `.plan/<PlanID>/tasks/`, one file per Task.
 
 Tasks carry a **Definition of Done**, implementation evidence, and Planner verification. No separate feedback, finding, decision, or verification records are required; Git history provides the historical timeline.
 
 ## How does ownership work?
 
-- The **Planner** owns `.plan/plans/` and the planning and verification sections of Task records — objectives, scope, constraints, task definitions, Definition of Done, and verification.
+- The **Planner** owns `.plan/*/plan.md` and the planning and verification sections of Task records — objectives, scope, constraints, task definitions, Definition of Done, and verification.
 - The **Implementer** owns repository implementation artifacts (`src/`, `tests/`, `docs/`, ...) and the implementation, evidence, and lifecycle-state sections of Task records.
 
-No role modifies another role's primary artifact or section.
+A role MUST NOT modify another role's primary artifact or section.
 
 ## How do AI agents consume plans?
 
-Agents read the canonical Plan and Task artifacts, determine their assigned role and ownership boundary, and operate only within it. `AGENTS.md` and `SKILL.md` define deterministic procedures for the Planner and Implementer. State (what is implemented, what is verified) is recorded in the records and can be checked without a central registry.
+Agents read the canonical Plan and Task artifacts, determine their assigned operation and role, and operate only within the ownership boundary. Roles, ownership boundaries, and the five operations — Draft a plan, Approve a plan, Implement a plan, Verify a plan, Complete a plan — are normative in `SPEC.md` (§3, §8, §9, §11–13, §18, §19); agents perform exactly one operation per turn. `AGENTS.md` and `SKILL.md` defer to `SPEC.md` rather than redefining agent behavior. State (what is implemented, what is verified) is recorded in the records and can be checked without a central registry.
 
 ## How does implementation work?
 
-The Implementer reads the complete canonical Plan, implements accepted Tasks, and records implementation evidence (commits, changed files, test commands, test results) in each Task. When complete, the Task is marked `Implemented`.
+The Implementer reads the complete canonical Plan, implements the Plan's Tasks, and records implementation evidence (commits, changed files, test commands, test results) in each Task. When complete, the Task is marked `Implemented`.
 
 ## How does verification work?
 
@@ -72,7 +72,7 @@ The task list in a canonical Plan contains **implementation tasks**; planning an
 
 ## What are the protocol semantics?
 
-PaC v0.4.0 is deliberately simple:
+PaC v0.5.0 is deliberately simple:
 
 - two roles and two canonical records;
 - one independent file per Task;
@@ -89,15 +89,15 @@ PaC v0.4.0 is deliberately simple:
 ```text
 .plan/
 ├── README.md
-├── plans/
-│   └── P001.md
-└── tasks/
-    └── P001-T001.md
+└── P001/
+    ├── plan.md
+    └── tasks/
+        └── P001-T001.md
 ```
 
 ## Repository contents
 
-- `SPEC.md` — normative PaC v0.4.0 specification
+- `SPEC.md` — normative PaC v0.5.0 specification
 - `AGENTS.md` — instructions for agents working in this repository
 - `SKILL.md` — portable PaC agent skill
 - `.plan/` — plan and task storage layout

@@ -1,0 +1,35 @@
+# P001 — Add OAuth Authentication
+
+**Status:** Planned
+**Scope:** `src/auth/`, `tests/auth/`
+**Planner:** planner-agent
+**Created:** 2026-09-14
+**PaC version:** v0.5.0
+
+## Objective
+
+Add OAuth 2.0 authentication so users can sign in with an external identity provider while existing password authentication continues to work.
+
+## Scope
+
+### Included
+
+- `src/auth/provider.ts` — provider abstraction.
+- `src/auth/oauth.ts` — OAuth flow.
+- `tests/auth/` — provider and OAuth tests.
+
+### Excluded
+
+- Password authentication redesign.
+- Multi-provider support.
+
+## Constraints
+
+- Existing authentication MUST remain functional.
+- The provider abstraction SHOULD support future providers without breaking changes.
+- No third-party authentication service is required.
+
+## Tasks
+
+- P001-T001
+- P001-T002

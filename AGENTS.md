@@ -6,7 +6,7 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 | Path | Role |
 |------|------|
-| `SPEC.md` | Normative PaC v0.4.0 protocol |
+| `SPEC.md` | Normative PaC v0.5.0 protocol |
 | `SKILL.md` | Portable agent skill; conformant with the Agent Skills spec |
 | `AGENTS.md` | Repository instructions (this file) |
 | `.plan/` | Plan and task storage layout |
@@ -21,88 +21,17 @@ This repository defines the Plan as Code (PaC) specification and reference artif
 
 ## Source of truth
 
-`SPEC.md` is the normative source for PaC v0.4.0. When any other artifact conflicts with it, `SPEC.md` wins. Examples, the skill, and the schemas are derived and must stay consistent.
+`SPEC.md` is the normative source for PaC v0.5.0. When any other artifact conflicts with it, `SPEC.md` wins. Examples, the skill, and the schemas are derived and must stay consistent.
 
-## Role Selection
+## Roles, ownership, and operations
 
-1. Determine the operation you are performing: Plan, Implement, or Verify.
-2. Confirm which role you are assigned for that operation.
-3. Read `SPEC.md` and `.plan/README.md` before acting.
-4. Identify your ownership boundary before writing anything.
-5. Do not combine roles in a way that collapses ownership boundaries within a single operation.
+Roles, ownership boundaries, lifecycles, and the five operations (Draft a plan, Approve a plan, Implement a plan, Verify a plan, Complete a plan) are normative in `SPEC.md` (§3, §8, §9, §11–13, §18, §19). This repository does not redefine agent behavior; agents MUST follow `SPEC.md` as written. Before operating:
 
-## Planner Rules
-
-- An agent acting as Planner owns `.plan/plans/` and the planning and verification sections of Task records.
-- Record the objective, scope, constraints, tasks, dependencies, and Definition of Done in the canonical records.
-- Create and maintain Tasks under `.plan/tasks/`.
-- Evaluate completed implementation against the Task Definition of Done.
-- Mark Tasks as `Verified` only after the Definition of Done is satisfied.
-- Mark Plans as `Completed` only when all required Tasks are `Verified`.
-- Record the reason when verification fails and mark the Task `Changes Requested`.
-- Preserve stable IDs.
-- Do not modify implementation merely to satisfy the plan.
-- Do not execute implementation tasks.
-
-## Implementer Rules
-
-- An agent acting as Implementer owns repository implementation artifacts (`src/`, `tests/`, `docs/`, ...) and the implementation, evidence, and lifecycle-state sections of Task records.
-- Read the complete canonical Plan before starting implementation.
-- Implement only accepted, planner-owned tasks.
-- Record implementation evidence (commit SHA, changed files, test command, test result) in the Task.
-- Mark the Task `Implemented` when the work and evidence are complete.
-- Do not change the objective.
-- Do not change the Definition of Done.
-- Do not mark a Task as `Verified`.
-- Do not authoritatively modify Planner verification.
-
-## Ownership Rules
-
-- Planner owns `.plan/plans/**` and the planning and verification sections of `.plan/tasks/**`.
-- Implementer owns `src/**`, `tests/**`, `docs/**`, the repository-defined implementation paths, and the implementation and evidence sections of `.plan/tasks/**`.
-- No role modifies another role's primary artifact or section.
-
-## Plan Consumption
-
-- An Implementer MUST read the complete Plan before starting implementation.
-- An Implementer MUST consume the canonical Plan rather than infer requirements from discussion.
-- Before operating, read `.plan/README.md` for the layout, ID formats, and active plans.
-- Check task dependencies before starting work.
-
-## Workflow
-
-```text
-Planner
-   ↓
-Plan and Tasks
-   ↓
-Implementer
-   ↓
-Implementation Evidence
-   ↓
-Planner
-   ↓
-Verified / Changes Requested
-```
-
-## Verification Rules
-
-- Only the Planner MAY mark a Task as `Verified`.
-- `Implemented` is not `Verified`.
-- Verification evaluates the Task's Definition of Done.
-- Failed verification MUST record the reason in the Task and mark it `Changes Requested`.
-- A Plan MAY only become `Completed` when all required Tasks are `Verified`.
-
-## Prohibited Actions
-
-- Modifying another role's primary artifact or section.
-- Changing the objective or Definition of Done.
-- Marking a Task as `Verified` as the Implementer.
-- Executing implementation Tasks as the Planner.
-- Claiming verification without evidence.
-- Changing stable IDs when wording or status changes.
-- Introducing a database or requiring a central service for state.
-- Duplicating Git history into event or iteration records.
+1. Determine the operation (Draft, Approve, Implement, Verify, or Complete) and the assigned role for it.
+2. Read `.plan/README.md` for the layout, ID formats, controlled vocabulary, and active plans.
+3. Read the applicable Plan and Task records.
+4. Identify the ownership boundary (`SPEC.md` §13) before writing anything.
+5. Perform exactly one operation per turn in the sequence Draft → Approve → Implement → Verify → Complete; do not chain or auto-continue into the next operation, and do not implement any Task before the Plan is `Planned`.
 
 ## Working in this repository
 

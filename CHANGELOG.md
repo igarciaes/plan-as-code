@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.5.0] - 2026-09-15
+
+### Changed
+
+- `SKILL.md` now requires post-operation conformance verification after each operation: the Conformance checks section mandates that the agent confirms the produced records conform to `SPEC.md` (including running `tools/validate.py` and the schemas when tooling is present) before finishing a turn, and each of the five operation subsections lists its operation-specific post-operation conformance expectations. Skill `metadata.version` bumped to `0.6.2`.
+
+- Review R002 accepted findings implemented. `SPEC.md` §3.3 and `README.md` rewrite the ownership prohibition as "A role MUST NOT modify another role's primary artifact or section" (`F001`). §9.10 adds outgoing transitions for `Blocked` (`→ In Progress`) and `Deferred` (`→ Planned`) and restricts the `Blocked`/`Deferred` source states to `Planned | In Progress | Implemented` so they cannot violate `INV-014` (`F002`, `F003`). §13.1 removes the undefined "Planner Decision" entry (`F004`). Plan-level Definition of Done is removed: stripped from the §6 template, the §20.1 projection, and `plan.schema.json`; completion stays Task-based (`F005`). §18.3, `SKILL.md`, and `README.md` replace the undefined "accepted Tasks" with "the Plan's Tasks" (`F007`). §8 lifecycle diagram notes `Cancelled` is reachable from any state (`F008`), §22 intro points at v0.5.0 (`F009`), and §8.4 plus `INV-014` state that cancelling a Plan requires cancelling its Tasks (`F014`).
+- Derived artifacts restamped to v0.5.0 and aligned with the normative version: `**PaC version:**` in `examples/`, `conformance/`, and `.plan/P003/plan.md`, the `tools/validate.py` docstring, `README.md`, `.plan/README.md`, and `tests/` (`F006`). `README.md` minimum-repository-structure block updated to the per-plan default layout of SPEC §5 (`F010`).
+- `schemas/plan.schema.json` and `schemas/task.schema.json` `required` arrays aligned with the §6/§7 MUST fields (Plan: `scope`, `planner`, `created`, `objective`, `constraints`; Task: `objective`), and all conformance fixture plans gain a `## Constraints` section (`F011`).
+- `tools/validate.py` `INV-010` now requires a verification `date` on `Verified` and `Changes Requested` Tasks per §12; two new unit tests cover the checks (`F012`).
+- Conformance fixture plan titles corrected from `Plan for P00` to `Plan for P001` (`F013`).
+
+### Notes
+
+- Protocol consistency patch implementing the accepted findings of review R002; PaC protocol version remains v0.5.0, no release tagged.
+
+- `SPEC.md` renames the fifth operation from `Close a plan` to `Complete a plan`, aligning the operation name with the `Completed` Plan status (`SPEC.md` §18, §21). `SKILL.md` (skill `metadata.version` bumped to `0.6.1`), `AGENTS.md`, `README.md`, and `.plan/README.md` updated accordingly.
+- `SPEC.md` defines five one-at-a-time operations — Draft, Approve, Implement, Verify, Complete — in `§18` and mandates that agents perform exactly one operation per turn without chaining. The implementation gate is made explicit in `§8.2`, `§9.2`, `§9.3`, and `§19`: an Implementer MUST NOT begin implementation of a Task whose parent Plan is not `Planned`. New invariant `INV-014` (A Task is not implemented before its parent Plan is `Planned`) is machine-checked by `tools/validate.py`, covered by a new `conformance/invalid/draft-plan-implementation` fixture and unit tests, and listed in `§21` conformance. `SKILL.md` and `AGENTS.md` updated to the five-operation model with one operation per turn.
+- `SKILL.md` reframed as a role-agnostic operations and conformance guide: it no longer defines Planner/Implementer procedures or agent behavior (role definitions, ownership boundaries, lifecycles, and behavior rules remain normative in `SPEC.md`). It now orients agents to the applicable `SPEC.md` sections per operation and provides conformance checks for the produced artifacts. Skill `metadata.version` bumped to `0.6.0`.
+- `AGENTS.md` no longer re-encodes role behavior; it defers to `SPEC.md` (§3, §8, §9, §11–13, §18, §19) and keeps only repository-specific guidance and validation conventions.
+- `README.md` notes that role behavior is normative in `SPEC.md` and that `AGENTS.md`/`SKILL.md` defer to it.
+- Default record layout moved to one directory per Plan: `.plan/<PlanID>/plan.md` for the Plan record and `.plan/<PlanID>/tasks/<TaskID>.md` for Tasks, replacing the flat `.plan/plans/` and `.plan/tasks/` directories. `SPEC.md` §5, §6, §7, and §22.3, `INV-013` in `tools/validate.py`, `SKILL.md`, `AGENTS.md`, `README.md`, `.plan/README.md`, `examples/`, `conformance/`, and `tests/` updated accordingly. This repository's records migrated to the new layout; legacy v0.3.x records remain unchanged and ignored by the validator.
+- `SPEC.md` and `SKILL.md` version bumped to v0.5.0.
+- `SKILL.md` and `AGENTS.md` clarify the host-mode boundary: a host planning gate (e.g. opencode Plan mode) approval covers only the creation/update of Plan and Task records and is not PaC plan approval; implementation begins only in a separate, planner-approved Implementer turn.
+- `SKILL.md` and `AGENTS.md` require a single PaC operation and role per invocation: the agent must not chain `Plan → Implement → Verify` in one turn, and "create a plan record" means act as Planner, write the Plan and Task records in `Draft` status, and stop.
+- `SPEC.md` clarifies the status model so agents start newly created Plans and Tasks in `Draft`: the Plan (`§8`) and Task (`§9`) lifecycle sections add explicit transition tables with owner and trigger, the canonical Task template now opens in `Draft`, `§18` splits plan finalization (`Draft → Planned`) into its own step, and `§21` conformance requires the `Draft`-first convention. `SKILL.md`, `AGENTS.md`, `.plan/README.md`, and a new `conformance/valid/draft` fixture updated accordingly.
+
+### Notes
+
+- Normative change to the default record layout; PaC protocol version bumped to v0.5.0. No release tagged; version files updated in working tree only.
+- Normative workflow change: the three broad operations (Plan, Implement, Verify) are refined into five one-at-a-time operations (Draft, Approve, Implement, Verify, Complete) and a new protocol invariant `INV-014` forbids implementing a Task before its parent Plan is `Planned`. PaC protocol version remains v0.5.0; no release tagged.
+- Non-normative documentation change to `SKILL.md`, `AGENTS.md`, and `README.md`; the PaC protocol remains v0.5.0 with no changes to protocol semantics, formats, or invariants.
+
 ## [v0.4.2] - 2026-09-14
 
 Plan P003 — Enforce Status Transition Ownership for Tasks and Plans (completed).

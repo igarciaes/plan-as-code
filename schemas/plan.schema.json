@@ -8,6 +8,11 @@
     "id",
     "title",
     "status",
+    "scope",
+    "planner",
+    "created",
+    "objective",
+    "constraints",
     "tasks"
   ],
   "properties": {
@@ -64,28 +69,10 @@
     },
     "tasks": {
       "type": "array",
-      "description": "References to Task records under `.plan/tasks/`.",
+      "description": "References to Task records under the Plan's `tasks/` directory.",
       "items": {
         "type": "string",
         "pattern": "^P[0-9]+-T[0-9]+$"
-      }
-    },
-    "definition_of_done": {
-      "type": "array",
-      "description": "Plan-level conditions for marking the Plan `Completed` (SPEC Section 8.3).",
-      "items": {
-        "type": "object",
-        "required": [
-          "text"
-        ],
-        "properties": {
-          "done": {
-            "type": "boolean"
-          },
-          "text": {
-            "type": "string"
-          }
-        }
       }
     }
   }

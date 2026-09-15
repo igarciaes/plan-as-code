@@ -1,4 +1,4 @@
-"""Automated tests for the PaC v0.4.0 protocol invariant validator (SPEC Section 17).
+"""Automated tests for the PaC v0.5.0 protocol invariant validator (SPEC Section 17).
 
 Runs with the standard library test runner:
 
@@ -9,6 +9,7 @@ Also runs under pytest when available, since the cases are unittest.TestCase.
 
 import tempfile
 import unittest
+import re
 from pathlib import Path
 
 import sys
@@ -24,7 +25,7 @@ PLAN = """# P001 — Valid Plan
 **Scope:** `src/`
 **Planner:** planner-agent
 **Created:** 2026-09-14
-**PaC version:** v0.4.0
+**PaC version:** v0.5.0
 
 ## Objective
 
@@ -93,6 +94,13 @@ PENDING_VERIFICATION = """**Result:** Pending
 **Date:** 2026-09-14
 """
 
+CHANGES_REQUESTED_NO_DATE = """**Result:** Changes Requested
+
+**By:** planner-agent
+
+Condition not satisfied.
+"""
+
 
 def dod(items):
     return "\n".join(f"- [{m}] {t}" for m, t in items)
@@ -122,10 +130,21 @@ def clean_repo(plans, tasks):
     tmp = tempfile.TemporaryDirectory()
     root = Path(tmp.name)
     files = {}
-    for i, content in enumerate(plans, start=1):
-        files[f".plan/plans/P{i:03d}.md"] = content
+    used = set()
+    for content in plans:
+        m = re.search(r"^#\s+(P\d+)\s+—", content, re.MULTILINE)
+        pid = m.group(1) if m else "P001"
+        folder = pid
+        n = 2
+        while folder in used:
+            folder = f"{pid}{n}"
+            n += 1
+        used.add(folder)
+        files[f".plan/{folder}/plan.md"] = content
     for name, content in tasks.items():
-        files[f".plan/tasks/{name}"] = content
+        m = re.match(r"(P\d+)", name)
+        prefix = m.group(1) if m else "P001"
+        files[f".plan/{prefix}/tasks/{name}"] = content
     write_repo(root, files)
     return root, tmp
 
@@ -255,6 +274,36 @@ class ValidatorTestCase(unittest.TestCase):
         self.assertTrue(self.violations(root, "INV-010"))
         tmp.cleanup()
 
+    def test_inv010_verified_without_date(self):
+        no_date = VERIFIED_VERIFICATION.replace("**Date:** 2026-09-14\n\n", "")
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task(
+                    "P001-T001",
+                    status="Verified",
+                    dod_items=[("x", "Criterion one.")],
+                    verification=no_date,
+                )
+            },
+        )
+        self.assertTrue(self.violations(root, "INV-010"))
+        tmp.cleanup()
+
+    def test_inv010_changes_requested_without_date(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task(
+                    "P001-T001",
+                    status="Changes Requested",
+                    verification=CHANGES_REQUESTED_NO_DATE,
+                )
+            },
+        )
+        self.assertTrue(self.violations(root, "INV-010"))
+        tmp.cleanup()
+
     def test_inv011_incomplete_definition_of_done(self):
         root, tmp = clean_repo(
             [PLAN],
@@ -287,10 +336,53 @@ class ValidatorTestCase(unittest.TestCase):
             [PLAN],
             {"P001-T001.md": task("P001-T001")},
         )
-        wrong = root / ".plan" / "plans" / "P001-T001.md"
-        wrong.write_text((root / ".plan" / "tasks" / "P001-T001.md").read_text())
-        (root / ".plan" / "tasks" / "P001-T001.md").unlink()
+        wrong = root / ".plan" / "P001" / "P001-T001.md"
+        wrong.write_text((root / ".plan" / "P001" / "tasks" / "P001-T001.md").read_text())
+        (root / ".plan" / "P001" / "tasks" / "P001-T001.md").unlink()
         self.assertTrue(self.violations(root, "INV-013"))
+        tmp.cleanup()
+
+    def test_inv014_implementation_requires_planned_plan(self):
+        draft = PLAN.replace("**Status:** Planned", "**Status:** Draft")
+        root, tmp = clean_repo(
+            [draft],
+            {
+                "P001-T001.md": task("P001-T001", status="Implemented", dod_items=[("x", "Criterion one.")]),
+                "P001-T002.md": task("P001-T002", status="In Progress", dod_items=[(" ", "Criterion two.")]),
+            },
+        )
+        self.assertTrue(self.violations(root, "INV-014"))
+        tmp.cleanup()
+
+    def test_inv014_planned_task_requires_non_draft_plan(self):
+        draft = PLAN.replace("**Status:** Planned", "**Status:** Draft")
+        root, tmp = clean_repo(
+            [draft],
+            {"P001-T001.md": task("P001-T001", status="Planned")},
+        )
+        self.assertTrue(self.violations(root, "INV-014"))
+        tmp.cleanup()
+
+    def test_inv014_planned_plan_allows_implementation(self):
+        root, tmp = clean_repo(
+            [PLAN],
+            {
+                "P001-T001.md": task("P001-T001", status="Implemented", dod_items=[("x", "Criterion one.")]),
+                "P001-T002.md": task("P001-T002", status="In Progress", dod_items=[(" ", "Criterion two.")]),
+            },
+        )
+        self.assertFalse(self.violations(root, "INV-014"))
+        tmp.cleanup()
+
+    def test_inv014_completed_plan_allows_implementation(self):
+        completed = PLAN.replace("**Status:** Planned", "**Status:** Completed")
+        root, tmp = clean_repo(
+            [completed],
+            {
+                "P001-T001.md": task("P001-T001", status="Verified", dod_items=[("x", "Criterion one.")], verification=VERIFIED_VERIFICATION),
+            },
+        )
+        self.assertFalse(self.violations(root, "INV-014"))
         tmp.cleanup()
 
     def test_legacy_v03x_plan_is_ignored(self):
@@ -299,7 +391,8 @@ class ValidatorTestCase(unittest.TestCase):
             [single],
             {"P001-T001.md": task("P001-T001")},
         )
-        legacy = root / ".plan" / "plans" / "P099.md"
+        legacy = root / ".plan" / "P099" / "plan.md"
+        legacy.parent.mkdir(parents=True, exist_ok=True)
         legacy.write_text(
             "# P099 — Legacy\n\n"
             "**Status:** Closed\n"
